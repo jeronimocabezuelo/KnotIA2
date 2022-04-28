@@ -53,7 +53,7 @@ def commonZone(xs,planarDiagram,planarZones):
     return list(set(zs[0]).intersection(*zs[1:]).difference([1]))
 
 def crossWithZone(knot,planarDiagram,planarZones,zone):
-    return [cross for cross in knot.crosses if zone in zonesConnectCross(cross,planarDiagram,planarZones)]
+    return [cross for cross in knot.cross if zone in zonesConnectCross(cross,planarDiagram,planarZones)]
 
 def crossesWithStrand(knot,strand):
     return [cross for cross in knot.crosses if strand in cross]
