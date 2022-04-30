@@ -157,7 +157,7 @@ def conectaPlanarDiagram(k,matrix,remainCross):
     firstNodo = NodoPD(matrix,strands,remainCross,strandsDict)
     queue.put(firstNodo.prioridad(),firstNodo)
     c = 0
-    while not queue.empty() and c<100:
+    while not queue.empty and c<100:
         c+=1
         nodo = queue.get()
         for successor in nodo.successors():

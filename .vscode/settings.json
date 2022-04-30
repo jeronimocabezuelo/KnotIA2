@@ -4,6 +4,7 @@
         "argwhere",
         "dtype",
         "isin",
+        "pyknotid",
         "pyplot",
         "reconectar",
         "reidemeister",

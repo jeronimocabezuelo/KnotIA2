@@ -5,6 +5,14 @@ from Path import *
 from X import *
 from PlanarDiagram import *
 from enum import Enum
+from random import randrange, choice, shuffle
+
+
+from pyknotid.catalogue.getdb import download_database
+from pyknotid.catalogue import get_knot, from_invariants
+#Uncomment the following line the first time it is imported.
+#download_database()
+
 class StrandType(Enum):
     ABOVE = 0
     MIDDLE = 1
@@ -211,8 +219,12 @@ class CustomKnot:
     
     def isPosibleUndoALoop(self,cross):
         """It tells us if it is possible to unLoop Reidemeister's first move on a cross."""
-        (unique, counts) = np.unique(cross.strands, return_counts=True)
-        return max(counts)>1
+        if type(cross) == type(X(0,0,0,0)):
+            (unique, counts) = np.unique(cross.strands, return_counts=True)
+            return max(counts)>1
+        elif type(cross) == type(1):
+            return len(crossesWithStrand(self,cross)) == 1
+        raise Exception("Incorrect type")
 
     def undoALoop(self,l):
         """UnLoop Reidemeister's first move in the strand labeled l"""
@@ -569,22 +581,22 @@ class CustomKnot:
         else:
             B,M,A = s1,s2,s3
         n = self.numberOfStrands
-        xsOld = [[X(B,A,mod(B-1,n),mod(A-1,n)),X(B,mod(M+1,n),mod(B+1,n),M),X(M,mod(A+1,n),mod(M-1,n),A)], #11 - 17
-                 [X(B,A,mod(B-1,n),mod(A-1,n)),X(B,mod(M-1,n),mod(B+1,n),M),X(M,mod(A+1,n),mod(M+1,n),A)], #12 - 18
-                 [X(B,A,mod(B+1,n),mod(A-1,n)),X(B,mod(M-1,n),mod(B-1,n),M),X(M,mod(A+1,n),mod(M+1,n),A)], #13 - 15
-                 [X(B,A,mod(B+1,n),mod(A-1,n)),X(B,mod(M+1,n),mod(B-1,n),M),X(M,mod(A+1,n),mod(M-1,n),A)], #14 - 16
-                 [X(B,A,mod(B-1,n),mod(A+1,n)),X(B,mod(M+1,n),mod(B+1,n),M),X(M,mod(A-1,n),mod(M-1,n),A)], #15 - 13
-                 [X(B,A,mod(B-1,n),mod(A+1,n)),X(B,mod(M-1,n),mod(B+1,n),M),X(M,mod(A-1,n),mod(M+1,n),A)], #16 - 14
-                 [X(B,A,mod(B+1,n),mod(A+1,n)),X(B,mod(M-1,n),mod(B-1,n),M),X(M,mod(A-1,n),mod(M+1,n),A)], #17 - 11
-                 [X(B,A,mod(B+1,n),mod(A+1,n)),X(B,mod(M+1,n),mod(B-1,n),M),X(M,mod(A-1,n),mod(M-1,n),A)], #18 - 12
-                 [X(M,A,mod(M-1,n),mod(A-1,n)),X(B,M,mod(B+1,n),mod(M+1,n)),X(B,mod(A+1,n),mod(B-1,n),A)], #21 - 27
-                 [X(M,A,mod(M-1,n),mod(A-1,n)),X(B,M,mod(B-1,n),mod(M+1,n)),X(B,mod(A+1,n),mod(B+1,n),A)], #22 - 28
-                 [X(M,A,mod(M+1,n),mod(A-1,n)),X(B,M,mod(B-1,n),mod(M-1,n)),X(B,mod(A+1,n),mod(B+1,n),A)], #23 - 25
-                 [X(M,A,mod(M+1,n),mod(A-1,n)),X(B,M,mod(B+1,n),mod(M-1,n)),X(B,mod(A+1,n),mod(B-1,n),A)], #24 - 26
-                 [X(M,A,mod(M-1,n),mod(A+1,n)),X(B,M,mod(B+1,n),mod(M+1,n)),X(B,mod(A-1,n),mod(B-1,n),A)], #25 - 23
-                 [X(M,A,mod(M-1,n),mod(A+1,n)),X(B,M,mod(B-1,n),mod(M+1,n)),X(B,mod(A-1,n),mod(B+1,n),A)], #26 - 24
-                 [X(M,A,mod(M+1,n),mod(A+1,n)),X(B,M,mod(B-1,n),mod(M-1,n)),X(B,mod(A-1,n),mod(B+1,n),A)], #27 - 21
-                 [X(M,A,mod(M+1,n),mod(A+1,n)),X(B,M,mod(B+1,n),mod(M-1,n)),X(B,mod(A-1,n),mod(B-1,n),A)]] #28 - 22
+        xsOld = [[X(B,A,mod(B-1,n),mod(A-1,n)),X(B,mod(M+1,n),mod(B+1,n),M),X(M,mod(A+1,n),mod(M-1,n),A)], #11 - 17 - 1
+                 [X(B,A,mod(B-1,n),mod(A-1,n)),X(B,mod(M-1,n),mod(B+1,n),M),X(M,mod(A+1,n),mod(M+1,n),A)], #12 - 18 - 2 
+                 [X(B,A,mod(B+1,n),mod(A-1,n)),X(B,mod(M-1,n),mod(B-1,n),M),X(M,mod(A+1,n),mod(M+1,n),A)], #13 - 15 - 3
+                 [X(B,A,mod(B+1,n),mod(A-1,n)),X(B,mod(M+1,n),mod(B-1,n),M),X(M,mod(A+1,n),mod(M-1,n),A)], #14 - 16 - 4
+                 [X(B,A,mod(B-1,n),mod(A+1,n)),X(B,mod(M+1,n),mod(B+1,n),M),X(M,mod(A-1,n),mod(M-1,n),A)], #15 - 13 - 5
+                 [X(B,A,mod(B-1,n),mod(A+1,n)),X(B,mod(M-1,n),mod(B+1,n),M),X(M,mod(A-1,n),mod(M+1,n),A)], #16 - 14 - 6
+                 [X(B,A,mod(B+1,n),mod(A+1,n)),X(B,mod(M-1,n),mod(B-1,n),M),X(M,mod(A-1,n),mod(M+1,n),A)], #17 - 11 - 7
+                 [X(B,A,mod(B+1,n),mod(A+1,n)),X(B,mod(M+1,n),mod(B-1,n),M),X(M,mod(A-1,n),mod(M-1,n),A)], #18 - 12 - 8
+                 [X(M,A,mod(M-1,n),mod(A-1,n)),X(B,M,mod(B+1,n),mod(M+1,n)),X(B,mod(A+1,n),mod(B-1,n),A)], #21 - 27 - 9
+                 [X(M,A,mod(M-1,n),mod(A-1,n)),X(B,M,mod(B-1,n),mod(M+1,n)),X(B,mod(A+1,n),mod(B+1,n),A)], #22 - 28 - 10
+                 [X(M,A,mod(M+1,n),mod(A-1,n)),X(B,M,mod(B-1,n),mod(M-1,n)),X(B,mod(A+1,n),mod(B+1,n),A)], #23 - 25 - 11
+                 [X(M,A,mod(M+1,n),mod(A-1,n)),X(B,M,mod(B+1,n),mod(M-1,n)),X(B,mod(A+1,n),mod(B-1,n),A)], #24 - 26 - 12
+                 [X(M,A,mod(M-1,n),mod(A+1,n)),X(B,M,mod(B+1,n),mod(M+1,n)),X(B,mod(A-1,n),mod(B-1,n),A)], #25 - 23 - 13
+                 [X(M,A,mod(M-1,n),mod(A+1,n)),X(B,M,mod(B-1,n),mod(M+1,n)),X(B,mod(A-1,n),mod(B+1,n),A)], #26 - 24 - 14
+                 [X(M,A,mod(M+1,n),mod(A+1,n)),X(B,M,mod(B-1,n),mod(M-1,n)),X(B,mod(A-1,n),mod(B+1,n),A)], #27 - 21 - 15
+                 [X(M,A,mod(M+1,n),mod(A+1,n)),X(B,M,mod(B+1,n),mod(M-1,n)),X(B,mod(A-1,n),mod(B-1,n),A)]] #28 - 22 - 16
         xsNew = [[X(B,A,mod(B+1,n),mod(A+1,n)),X(B,mod(M-1,n),mod(B-1,n),M),X(M,mod(A-1,n),mod(M+1,n),A)], #11
                  [X(B,A,mod(B+1,n),mod(A+1,n)),X(B,mod(M+1,n),mod(B-1,n),M),X(M,mod(A-1,n),mod(M-1,n),A)], #12
                  [X(B,A,mod(B-1,n),mod(A+1,n)),X(B,mod(M+1,n),mod(B+1,n),M),X(M,mod(A-1,n),mod(M-1,n),A)], #13
@@ -655,3 +667,80 @@ class CustomKnot:
             ceroIndices = indicesOfNumberInMatrix(pd,0)
         self.pdz = pd
         return self.planarDiagramZones()
+
+def randomMov(knot,debug=False):
+    typeMov = randrange(1,4)
+    if debug: print("-------") 
+    n = knot.numberOfStrands
+    if debug: print("number Of Strands:",n)
+    if debug: print(k)
+    if debug: print("type, ", typeMov)
+    if typeMov == 1:
+        createOrUndo = randrange(2) 
+        if createOrUndo:
+            if debug: print("Create")
+            if n == 0:
+                strandToCreate = 1
+            else:
+                strandToCreate = randrange(1,n+1)
+            if debug: print("strandToCreate",strandToCreate)
+            orientation = randrange(4)
+            knot.crateALoop(strandToCreate,orientation)
+            if debug: print("Hecho",strandToCreate,"orientation: ",orientation)
+        else:
+            if debug: print("undo")
+            posibleCross = [cross for cross in knot.crosses if knot.isPosibleUndoALoop(cross)]
+            if len(posibleCross)>0:
+                randomCross = choice(posibleCross)
+                if debug: print("randomCross",randomCross)
+                knot.undoALoop(randomCross)
+                if debug: print("Hecho",randomCross)
+    elif typeMov == 2:
+        createOrUndo = randrange(2)
+        if debug: print("create") if createOrUndo else print("undo")
+        possibilities = [(l1,l2) for l1 in range(1,n) for l2 in range(1,n)]
+        if not createOrUndo: possibilities = [(l1,l2) for (l1,l2) in possibilities if (knot.typeOfStrand(l1) == StrandType.ABOVE and knot.typeOfStrand(l2) == StrandType.BELOW) or (knot.typeOfStrand(l1) == StrandType.BELOW and knot.typeOfStrand(l2) == StrandType.ABOVE)]
+        shuffle(possibilities)
+        while possibilities:
+            (l1,l2) = possibilities.pop(0)
+            if createOrUndo:
+                orientation = randrange(2)
+                if debug: print(l1,l2,orientation)
+                if knot.createReidemeisterII(l1,l2,orientation):
+                    if debug: print("Hecho",l1,l2, "orientation", orientation)
+                    break
+            else:
+                if debug: print("intentando:", l1,l2)
+                if knot.undoReidemeisterII(l1,l2):
+                    if debug: print("Hecho",l1,l2)
+                    break
+    elif typeMov == 3:
+        possibilities = {StrandType.ABOVE:[], StrandType.MIDDLE:[],StrandType.BELOW:[]}
+        
+        for l in range(1,n):
+            t = knot.typeOfStrand(l)
+            possibilities[t].append(l)
+        possibilities = [(l1,l2,l3) for l1 in possibilities[StrandType.BELOW] for l2 in possibilities[StrandType.MIDDLE] for l3 in possibilities[StrandType.ABOVE]]
+        possibilities = [(l1,l2,l3) for (l1,l2,l3) in possibilities if mod(l1+1,n)!=l2 and mod(l1-1,n)!=l2 and mod(l1+1,n)!=l3 and mod(l1-1,n)!=l3 and mod(l2+1,n)!=l3 and mod(l2-1,n)!=l3]
+        shuffle(possibilities)
+        while possibilities:
+            (l1,l2,l3) = possibilities.pop(0)
+            print(l1,l2,l3)
+            if knot.reidemeisterIII(l1,l2,l3,check=False):
+                if debug: print("Hecho III")
+                break
+        if debug: print("No se puede hacer")
+
+
+def knotFromPyknotid(s):
+  k = get_knot(s)
+  crosses = k.planar_diagram.split()
+  crossfine = []
+  for cross in crosses:
+    if ',' in cross[2:]:
+      aux = cross[2:].split(',')
+      crossfine.append(X(int(aux[0]),int(aux[1]),int(aux[2]),int(aux[3])))
+    else:
+      crossfine.append(X(int(cross[2:][0]),int(cross[2:][1]),int(cross[2:][2]),int(cross[2:][3])))
+  k = CustomKnot(crossfine)
+  return k
