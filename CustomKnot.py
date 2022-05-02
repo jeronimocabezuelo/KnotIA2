@@ -1,3 +1,4 @@
+from ast import Raise
 import numpy as np
 from sympy import true
 from DrawinKnots import *
@@ -22,10 +23,17 @@ class StrandType(Enum):
 class CustomKnot:
     def __init__(self,xs):
         """A knot is a mathematical object, with this class we try to model it."""
-        self.crosses = sorted(xs)
+        if type(xs) == type([]):
+            self.crosses = sorted(xs)
+        elif type(xs) == str:
+            self.crosses = sorted(eval(xs))
+        else:
+            raise Exception("Incorrect type")
         self.pd = None
         self.pdz = None
         self.isCrossValid()
+
+            
 
     def __repr__(self):
         return "Cross: "+self.crosses.__repr__()+"\nPlanar Diagrams:\n"+np.array2string(self.planarDiagrams(), suppress_small=True)

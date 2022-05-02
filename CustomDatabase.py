@@ -52,6 +52,6 @@ def dataBase(maxCrosses: int, numberOfKnots: int, numberOfRandomMov: int,maxCros
             auxDict["name"].append(deepcopy(row["name"]))
             auxDict["numberOfCrosses"].append(copy(row["numberOfCrosses"]))
             auxDict["crosses"].append(knot.crosses)
-            auxDict["pd"].append(knot.planarDiagrams())
+            auxDict["pd"].append(repr(knot.planarDiagrams()))
     return pd.DataFrame(auxDict)
 
