@@ -1,3 +1,4 @@
+from __future__ import annotations
 import numpy as np
 from copy import copy,deepcopy
 from AuxiliarFunctions import *
@@ -26,7 +27,6 @@ def indicesNeedFree(ind,d):
     return aux+aux1+aux2
 
 def insertThreeRowOrColumn(matrix,d,ind):
-    #unconnectedStrand = set()
     unconnectedStrand = set([matrix[auxInd] for auxInd in indicesNeedFree(ind,d) if matrix[auxInd]>0])
     if d==0:
         matrix = insert(matrix,ind[0],0,3,axis=0)
@@ -49,10 +49,17 @@ def insertThreeRowOrColumn(matrix,d,ind):
             matrix[base1] = matrix[baseInd]
             matrix[base2] = matrix[baseInd]
             matrix[base3] = matrix[baseInd]
-        if (matrix[baseInd]>0 and matrix[base4]<0) or (matrix[baseInd]<0 and matrix[base4]>0):
-            matrix[base1] = max(matrix[baseInd],matrix[base4])
-            matrix[base2] = max(matrix[baseInd],matrix[base4])
-            matrix[base3] = max(matrix[baseInd],matrix[base4])
+        # if (matrix[baseInd]>0 and matrix[base4]<0) or (matrix[baseInd]<0 and matrix[base4]>0):
+        #     matrix[base1] = max(matrix[baseInd],matrix[base4])
+        #     matrix[base2] = max(matrix[baseInd],matrix[base4])
+        #     matrix[base3] = max(matrix[baseInd],matrix[base4])
+        if matrix[baseInd]<0:
+            matrix[base1] = matrix[base4]
+            unconnectedStrand.add(matrix[base1])
+        elif matrix[base4]<0:
+            matrix[base3] = matrix[baseInd] 
+            unconnectedStrand.add(matrix[base3])
+
     return matrix,ind,unconnectedStrand      
 
 def indicesOfCross(ind,d):
@@ -98,11 +105,12 @@ class NodoPD:
         self.unconnectedStrands = unconnectedStrands
         self.lengths = lengths
         self.remainCross = remainCross
-    def successors(self):
-        #print("-------")
-        #print("Padre:")
-        #print(self.unconnectedStrands)
-        #print(self.pd)
+    def successors(self,debug=False)->list[NodoPD]:
+        if debug:
+            print("-------")
+            print("Padre:")
+            print(self.unconnectedStrands)
+            print(self.pd)
         successorsArray  = []
         for strand in self.unconnectedStrands:
             indices = indicesOfNumberInMatrix(self.pd,strand)
@@ -115,14 +123,15 @@ class NodoPD:
                 newPd = deepcopy(self.pd)
                 newDict = dict(self.lengths)
                 newPd,partDesconnet = addCrossToMatrix(newPd,cross,ind)
-                #print("Hijo: ",strand)
-                #print(newPd)
+                if debug:
+                    print("Hijo: ",strand)
+                    print(newPd)
                 newUnconnected = [s for s in self.unconnectedStrands if s!=strand]
                 for l in partDesconnet:
                     newUnconnected.append(l)
                     if l in newDict.keys():
                         newDict.pop(l)
-                successorsArray .append(NodoPD(newPd,newUnconnected,crossCopy,newDict))
+                successorsArray.append(NodoPD(newPd,newUnconnected,crossCopy,newDict))
             else:
                 gapsCreated = False
                 length,matrixConnected,_,_ = connect(self.pd,strand,strand)
@@ -130,42 +139,45 @@ class NodoPD:
                     gapsCreated = True
                     length,matrixConnected,_,_  = connect(createGaps(self.pd),strand,strand)
                 if type(matrixConnected) == type(None):
-                    #print("Descartamos padre")
+                    if debug: print("Descartamos padre")
                     return []
                 newDict = dict(self.lengths)
                 newDict[strand] = length
-                #print("Hijo: ",strand)
-                #print(matrixConnected)
+                if debug:
+                    print("Hijo: ",strand)
+                    print(matrixConnected)
                 if gapsCreated: matrixConnected,newDict = compactPlanarDiagram(matrixConnected,newDict)
                 successorsArray .append(NodoPD(matrixConnected,[s for s in self.unconnectedStrands if s != strand],deepcopy(self.remainCross),newDict))
         successorsArray .sort(key=lambda x: x.length())
         return successorsArray 
-    def prioridad(self):
+    def priority(self):
         return len(self.unconnectedStrands)+len(self.remainCross)
     def length(self):
         return sum(self.lengths.values())
 
-def conectaPlanarDiagram(k,matrix,remainCross):
-    queue = PriorityQueue()
+def conectaPlanarDiagram(k,matrix,remainCross,debug=False):
+    if debug: print("conectaPlanarDiagram")
+    queue = PriorityQueue[NodoPD]()
     allStrands = [i for i in range(1,2*len(k.crosses)+1)]
     tuples = [(connected(matrix,strand),strand) for strand in allStrands]
     strandsDict = {strand:l for (c,l),strand in tuples if c}
     strands = [strand for strand in allStrands if strand not in strandsDict.keys()]
-    #print("unconnected", strands)
+    if debug: print("unconnected", strands)
     if len(remainCross)==0 and len(strands)==0:
         return matrix,strandsDict
-    firstNodo = NodoPD(matrix,strands,remainCross,strandsDict)
-    queue.put(firstNodo.prioridad(),firstNodo)
+    firstNode = NodoPD(matrix,strands,remainCross,strandsDict)
+    queue.put(firstNode.priority(),firstNode)
     c = 0
     while not queue.empty and c<100:
         c+=1
-        nodo = queue.get()
-        for successor in nodo.successors():
-            d = successor.prioridad()
+        node = queue.get()
+        for successor in node.successors(debug):
+            d = successor.priority()
             if d == 0:
                 return successor.pd,successor.lengths
             else:
                 queue.put(d,successor)
+    raise Exception("Se han acabado las opciones")
 
 def reconnect(pd,strand):
     """Delete the path from the strand, and reconnect it."""
@@ -175,23 +187,29 @@ def reconnect(pd,strand):
             pd[ind] = 0
     return connectMatrixLength(pd,strand,strand)
 
-def compactPlanarDiagram(pd,lengths):
-    #print("compactPlanarDiagram")
-    #print(lengths)
-    #print(pd)
+def compactPlanarDiagram(pd,lengths,debug=False):
+    if debug:
+        print("compactPlanarDiagram")
+        print(lengths)
+        print(pd)
     previousShape = pd.shape
-    while True:
+    c=0
+    while True and c<100:
+        c+=1
         lengthsSorted = dict(sorted(lengths.items(), key=lambda item: item[1])).keys()
         pd = removeUnnecessaryRow(pd)
         pd = removeUnnecessaryColumn(pd)
         pd = borderByZeros(pd)
         for strand in lengthsSorted:
-            #print("Antes de reconectar",strand)
-            #print(pd)
+            if debug:
+                print("Antes de reconectar",strand)
+                print(pd)
             pd,l = reconnect(pd,strand)
             lengths[strand] = l
-            #print("despues de reconectar")
-            #print(pd)
+            if debug:
+                print("despues de reconectar")
+                print(pd)
+        pd = borderByZeros(pd)
         if pd.shape == previousShape:
             break
         previousShape = pd.shape

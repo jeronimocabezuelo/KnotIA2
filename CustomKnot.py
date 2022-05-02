@@ -1,4 +1,5 @@
 import numpy as np
+from sympy import true
 from DrawinKnots import *
 from AuxiliarFunctions import *
 from Path import *
@@ -115,7 +116,7 @@ class CustomKnot:
         crossesCopy = self.crosses.copy()
         if len(crossesCopy) == 0:#Estamos ante un nonudo sin cruces
             return np.array([[1,1,1],[1,0,1],[1,1,1]],dtype=int)
-        if type(self.pd) == type(None):
+        if type(self.pd) == type(None) or np.all((self.pd==0)):
             cross = crossesCopy.pop(crossWithStrand(crossesCopy,1))
             matrix = np.zeros((3,3),dtype=int)
             strands = cross.strands
@@ -130,7 +131,7 @@ class CustomKnot:
             crossesCopy = [cross for cross in crossesCopy if type(findCrossInPd(cross,self.pd)) == type(None)]
             matrix = self.pd
             #print(matrix)
-            #print(cross_copy)
+            #print(crossesCopy)
         pd,lengths = conectaPlanarDiagram(self,matrix,crossesCopy)
         pd,lengths = compactPlanarDiagram(pd,lengths)
         pd = removeBorderOfZeros(pd)
@@ -177,6 +178,7 @@ class CustomKnot:
     def crateALoop(self,l,typ):
         """Create a loop of Reidemeister's first move."""
         if len(self.crosses) == 0:
+            self.pd = None
             self.crosses.append(X(1,2,2,1))
         else:
             n = self.numberOfStrands
@@ -247,6 +249,7 @@ class CustomKnot:
             n = self.numberOfStrands
             pdCopy = deepcopy(self.pd)
             pdCopy = removeCrossOfPD(pdCopy,self.crosses[i])
+            print(pdCopy)
             self.crosses.remove(self.crosses[i])
             for i in range(len(self.crosses)):
                 for j in range(len(self.crosses[i].strands)):
@@ -270,16 +273,18 @@ class CustomKnot:
                         cape = isCapeOfCross(self.pd,ind)
                         if cape==-1:
                             pdCopy[ind] = 0
+                        elif self.pd[uDLF(cape,uDLF(cape,ind))] == mod(l-2,n):
+                            pdCopy[ind] = mod(l-1,n-2)
                 elif i == mod(l+1,n):
                     for ind in indicesOfNumberInMatrix(self.pd,i):
                         cape = isCapeOfCross(self.pd,ind)
                         if cape==-1:
                             pdCopy[ind] = 0
                         elif self.pd[uDLF(cape,ind)]<0 and self.pd[uDLF(cape,uDLF(cape,ind))] == mod(l+2,n):
-                                pdCopy[ind] = mod(l-1,n)
+                                pdCopy[ind] = mod(l-1,n-2)
                 elif i>l+1:
                     for ind in indicesOfNumberInMatrix(self.pd,i):
-                        pdCopy[ind] = pdCopy[ind]-2
+                        pdCopy[ind] = mod(pdCopy[ind]-2,n-2)
         if self.numberOfStrands < 3:
             self.pd = None
         else:
@@ -536,35 +541,35 @@ class CustomKnot:
 
     def isPosibleReidemeisterIII(self,s1,s2,s3):
         """It tells us whether it is possible to make a Reidemeister move of the third type. It will return a bool and the strands Below, Middle and Above."""
-        cross = set()
+        crosses = set()
         for strand in [s1,s2,s3]:
             for cross in crossesWithStrand(self,strand):
-                cross.add(cross)
-        cross = list(cross)
-        if len(cross)!= 3:
+                crosses.add(cross)
+        crosses = list(crosses)
+        if len(crosses)!= 3:
             return False, None, None, None
         pd = self.planarDiagrams()
         pd = borderByZeros(pd)
         pd = createGaps(pd)
         pZ = self.planarDiagramZones()
-        cZ = commonZone(cross,pd,pZ)
+        cZ = commonZone(crosses,pd,pZ)
         if len(cZ) != 1:
             return False,None,None,None
-        crossWZ = crossWithZone(self,pd,pZ,cZ[0])
-        if len(crossWZ)!=3:
+        crossesWZ = crossesWithZone(self,pd,pZ,cZ[0])
+        if len(crossesWZ)!=3:
             return False, None, None, None
         strandBelow = None #Debajo
         strandMiddle = None #Medio
         strandAbove = None #Encima
         for strand in [s1,s2,s3]:
-            cross = crossesWithStrand(self,strand)
-            if len(cross) != 2:
+            crosses = crossesWithStrand(self,strand)
+            if len(crosses) != 2:
                 return False, None, None, None
-            if cross[0].isStrandAbove(strand) and cross[1].isStrandAbove(strand):
+            if crosses[0].isStrandAbove(strand) and crosses[1].isStrandAbove(strand):
                 strandAbove = strand
-            elif not cross[0].isStrandAbove(strand) and not cross[1].isStrandAbove(strand):
+            elif not crosses[0].isStrandAbove(strand) and not crosses[1].isStrandAbove(strand):
                 strandBelow = strand
-            elif (cross[0].isStrandAbove(strand) and  not cross[1].isStrandAbove(strand)) or (not cross[0].isStrandAbove(strand) and  cross[1].isStrandAbove(strand)):
+            elif (crosses[0].isStrandAbove(strand) and  not crosses[1].isStrandAbove(strand)) or (not crosses[0].isStrandAbove(strand) and  crosses[1].isStrandAbove(strand)):
                 strandMiddle = strand
         if strandBelow == None or strandMiddle == None or strandAbove == None:
             return False, None, None, None
@@ -633,6 +638,7 @@ class CustomKnot:
                         cape = isCapeOfCross(self.pd,ind)
                         if cape == -1:
                             self.pd[ind] = 0
+
                 self.planarDiagrams()
                 self.pdz = None
                 return True
@@ -655,10 +661,10 @@ class CustomKnot:
             pd[base] = i
             indConectados=[base]
             cola = PriorityQueue()
-            cola.put(0,Node(pd,base,None,0))
-            while not cola.empty():
+            cola.put(0,Node(pd,base,None,0,))
+            while not cola.empty:
                 nodo = cola.get()
-                for sucesor in nodo.sucesores(i):
+                for sucesor in nodo.successors(i):
                     if not sucesor.origin in indConectados:
                         indConectados.append(sucesor.origin)
                         cola.put(0,sucesor)
@@ -668,15 +674,15 @@ class CustomKnot:
         self.pdz = pd
         return self.planarDiagramZones()
 
-def randomMov(knot,debug=False):
+def randomMov(knot: CustomKnot,maxCrosses:int = 100,debug=False):
     typeMov = randrange(1,4)
     if debug: print("-------") 
     n = knot.numberOfStrands
     if debug: print("number Of Strands:",n)
-    if debug: print(k)
+    if debug: print(knot)
     if debug: print("type, ", typeMov)
     if typeMov == 1:
-        createOrUndo = randrange(2) 
+        createOrUndo = randrange(2) if n< maxCrosses  else 0
         if createOrUndo:
             if debug: print("Create")
             if n == 0:
@@ -696,7 +702,7 @@ def randomMov(knot,debug=False):
                 knot.undoALoop(randomCross)
                 if debug: print("Hecho",randomCross)
     elif typeMov == 2:
-        createOrUndo = randrange(2)
+        createOrUndo = randrange(2) if n< maxCrosses  else 0
         if debug: print("create") if createOrUndo else print("undo")
         possibilities = [(l1,l2) for l1 in range(1,n) for l2 in range(1,n)]
         if not createOrUndo: possibilities = [(l1,l2) for (l1,l2) in possibilities if (knot.typeOfStrand(l1) == StrandType.ABOVE and knot.typeOfStrand(l2) == StrandType.BELOW) or (knot.typeOfStrand(l1) == StrandType.BELOW and knot.typeOfStrand(l2) == StrandType.ABOVE)]
@@ -731,16 +737,23 @@ def randomMov(knot,debug=False):
                 break
         if debug: print("No se puede hacer")
 
+def randomMovN(knot: CustomKnot,n: int,maxCrosses:int,percentage = False, debug = False):
+    for i in range(n):
+        if percentage:
+            print("percentage randomMovN: {:3.2f}".format((((i+1)/n)*100)))
+        randomMov(knot,maxCrosses,debug)
 
-def knotFromPyknotid(s):
-  k = get_knot(s)
-  crosses = k.planar_diagram.split()
-  crossfine = []
-  for cross in crosses:
-    if ',' in cross[2:]:
-      aux = cross[2:].split(',')
-      crossfine.append(X(int(aux[0]),int(aux[1]),int(aux[2]),int(aux[3])))
-    else:
-      crossfine.append(X(int(cross[2:][0]),int(cross[2:][1]),int(cross[2:][2]),int(cross[2:][3])))
-  k = CustomKnot(crossfine)
-  return k
+def knotFromPyknotid(s: str) -> CustomKnot:
+    if s == "0_1":
+        return CustomKnot([])
+    k = get_knot(s)
+    crosses = k.planar_diagram.split()
+    crossfine = []
+    for cross in crosses:
+        if ',' in cross[2:]:
+            aux = cross[2:].split(',')
+            crossfine.append(X(int(aux[0]),int(aux[1]),int(aux[2]),int(aux[3])))
+        else:
+            crossfine.append(X(int(cross[2:][0]),int(cross[2:][1]),int(cross[2:][2]),int(cross[2:][3])))
+    k = CustomKnot(crossfine)
+    return k

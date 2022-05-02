@@ -4,6 +4,7 @@
         "argwhere",
         "dtype",
         "isin",
+        "ndarray",
         "pyknotid",
         "pyplot",
         "reconectar",

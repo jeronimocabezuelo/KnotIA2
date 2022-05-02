@@ -1,18 +1,21 @@
+from __future__ import annotations
 import numpy as np
 from AuxiliarFunctions import *
 from copy import copy
+from typing import Tuple, TypeVar,Generic
 
-class PriorityQueue:
+T = TypeVar('T')
+class PriorityQueue(Generic[T]):
     """A queue with priorities, items can be inserted with .put(priority,item) and extracted with .get()"""
     def __init__(self):
         self.queue = []
-    def priorities(self):
+    def priorities(self)->list[int]:
         """Returns a list with the priorities."""
         return [element[0] for element in self.queue]
-    def items(self):
+    def items(self)->list[T]:
         """Returns a list with the elements."""
         return [element[1] for element in self.queue]
-    def put(self,priority,item):
+    def put(self,priority:int,item:T):
         """Inserts an element with its priority"""
         if item in self.items():
             i = self.items().index(item)
@@ -20,7 +23,7 @@ class PriorityQueue:
                 self.queue[i] = (priority,item)
         else:
             self.queue.append((priority,item))
-    def get(self):
+    def get(self)->T:
         """Gets an item.."""
         if not self.queue:
             raise Exception("The queue has no elements.")
@@ -36,11 +39,11 @@ class PriorityQueue:
         """It tells us the length of the queue."""
         return len(self.queue)
 
-def distance(index1,index2):
+def distance(index1:tuple,index2:tuple)->int:
     """Calculates the distance between two indexes. Manhattan distance. l0"""
     return abs(index2[0]-index1[0])+abs(index2[1]-index1[1])
 
-def isCornerOfPath(matrix,ind):
+def isCornerOfPath(matrix:np.ndarray,ind:tuple):
     """It tells us if an index is a corner of a path."""
     number = matrix[ind]
     for i in range(4):
@@ -51,14 +54,14 @@ def isCornerOfPath(matrix,ind):
     return False
 
 class Node:
-    def __init__(self,matrix,origin,destin,length,previousDirection,directionsChanges):
+    def __init__(self,matrix:np.ndarray,origin,destin,length:int,previousDirection:int|None = None,directionsChanges = 0):
         self.matrix = matrix
         self.origin = origin
         self.destin = destin
         self.length = length
         self.previousDirection = previousDirection
         self.directionsChanges = directionsChanges
-    def successors(self,numberToFill,numberFree=0):
+    def successors(self,numberToFill,numberFree=0)->list[Node]:
         suc = []
         for i in range(4):
             newOrigin = uDLF(i,self.origin)
@@ -73,7 +76,7 @@ class Node:
 
 #TODO: Mejorar la eficiencia haciendo de forma sincrona la conexion desde origen a destino y desde destino a origen
 #TODO: Mejorar el camino añadiendo una penalizacion por cambios de sentido
-def connect(matrix,numberO,numberD,caminoNumber=None,corner=False,numberFree = 0,oneOriginDestin = False,debug=False):
+def connect(matrix,numberO:int,numberD:int,caminoNumber:int|None=None,corner:bool=False,numberFree:int = 0,oneOriginDestin:bool = False,debug:bool=False):
     """Returns an array connecting numberO and numberD, the length of the path, and the indices of the origin and destination."""
     for origin in indicesOfNumberInMatrix(matrix,numberO):
         if corner:
@@ -90,12 +93,12 @@ def connect(matrix,numberO,numberD,caminoNumber=None,corner=False,numberFree = 0
                 return None,None,None,None
     return None,None,None,None
 
-def connectOrigDest(matrix,origin,destin,caminoNumber,numberFree=0,debug=False):
+def connectOrigDest(matrix,origin,destin,caminoNumber,numberFree=0,debug=False)->tuple[int,np.ndarray]|tuple[None,None]:
     """Returns an array connecting origin and destin and the length of the path."""
     if origin == destin:
         return 0,matrix
     visited = []
-    queue = PriorityQueue()
+    queue = PriorityQueue[Node]()
     cape = isCapeOfCross(matrix,origin)
     queue.put(distance(origin,destin),Node(matrix,origin,destin,0, None if cape==-1 else cape,0))
     while not queue.empty:
@@ -137,12 +140,12 @@ def connectMatrixLength(matrix,numberO,numberD):
     long,mat,_,_ = connect(matrix,numberO,numberD)
     return mat,long
 
-def connectable(matrix,numberO,numberD):
+def connectable(matrix,numberO,numberD)->bool:
     """It tells us if it is possible to connect numberO and numberD."""
     m = connectMatrix(matrix,numberO,numberD)
     return type(m)!=type(None)
 
-def connectableOrigDest(matrix,origin,destin,numberFree=0):
+def connectableOrigDest(matrix,origin,destin,numberFree=0)->tuple[bool,int|None]:
     """It tells us if it is possible to connect origin and destin."""
     l,m = connectOrigDest(matrix,origin,destin,matrix[origin],numberFree)
     return type(m)!=type(None),l
