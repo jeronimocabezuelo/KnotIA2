@@ -25,7 +25,7 @@ def knotNames(n: int) -> dict[int:list[str]]:
     return auxDict
 
 def singleDatabase(maxCrosses: int):
-    auxDict = {"name":[],"numberOfCrosses":[],"crosses":[],"pd":[]}
+    auxDict = {"name":[],"numberOfCrosses":[],"crosses":[]}
     names = knotNames(maxCrosses)
     for numberCrosses in names.keys():
         for name in names[numberCrosses]:
@@ -33,25 +33,22 @@ def singleDatabase(maxCrosses: int):
             auxDict["numberOfCrosses"].append(numberCrosses)
             knot = knotFromPyknotid(name)
             auxDict["crosses"].append(knot.crosses)
-            auxDict["pd"].append(knot.planarDiagrams())
 
     return pd.DataFrame(auxDict)
 
-def dataBase(maxCrosses: int, numberOfKnots: int, numberOfRandomMov: int,maxCrossesInRandomMov: int):
+def dataBase(maxCrosses: int, numberOfKnots: int, numberOfRandomMov: int,maxCrossesInRandomMov: int,debug:bool = False):
     df = singleDatabase(maxCrosses)
     df = df.reset_index()  # make sure indexes pair with number of rows
-    auxDict = {"name":[],"numberOfCrosses":[],"crosses":[],"pd":[]}
+    auxDict = {"name":[],"numberOfCrosses":[],"crosses":[]}
     for index, row in df.iterrows():
         for i in range(numberOfKnots):
-            clear_output(wait=True)
+            #clear_output(wait=True)
             print("name", row["name"])
             print("copy", i)
             knot = CustomKnot(deepcopy(row["crosses"]))
-            knot.pd = row["pd"]
-            randomMovN(knot,numberOfRandomMov,maxCrossesInRandomMov,percentage=True,debug=True)
+            knot.randomMovN(numberOfRandomMov,maxCrossesInRandomMov,percentage=True,debug=debug)
             auxDict["name"].append(deepcopy(row["name"]))
             auxDict["numberOfCrosses"].append(copy(row["numberOfCrosses"]))
             auxDict["crosses"].append(knot.crosses)
-            auxDict["pd"].append(repr(knot.planarDiagrams()))
     return pd.DataFrame(auxDict)
 

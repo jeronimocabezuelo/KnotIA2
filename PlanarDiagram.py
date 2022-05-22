@@ -1,32 +1,33 @@
 from __future__ import annotations
+from ast import Str
 import numpy as np
 from copy import copy,deepcopy
 from AuxiliarFunctions import *
 from Path import *
 from X import *
 
-def directionOfStrandWhenAdd(matrix,ind):
+def directionOfStrandWhenAdd(matrix:PlanarDiagram,ind:Position):
     for i in range(4):
         if exists(uDLF(i,ind),matrix) and matrix[uDLF(i,ind)]<0:
             return (i+2)%4
 
-def addThreeRowOrColumn(matrix,d,ind):
-    if d==0:
+def addThreeRowOrColumn(matrix:PlanarDiagram,d:int,ind:Position)->tuple[PlanarDiagram,Position]:
+    if d%4==0:
         return np.append(np.zeros((3,matrix.shape[1]),dtype=int),matrix,axis=0),(ind[0]+3,ind[1])
-    if d==1:
+    elif d%4==1:
         return np.append(matrix,np.zeros((matrix.shape[0],3),dtype=int),axis=1), ind
-    if d==2:
+    elif d%4==2:
         return np.append(matrix,np.zeros((3,matrix.shape[1]),dtype=int),axis=0), ind
-    if d==3:
+    else:
         return np.append(np.zeros((matrix.shape[0],3),dtype=int),matrix,axis=1),(ind[0],ind[1]+3)
 
-def indicesNeedFree(ind,d):
+def indicesNeedFree(ind:Position,d:int):
     aux = [uDLF(d,ind),uDLF(d,uDLF(d,ind)),uDLF(d,uDLF(d,uDLF(d,ind)))]
     aux1 = [uDLF(d+1,indAux) for indAux in aux]
     aux2 = [uDLF(d-1,indAux) for indAux in aux]
     return aux+aux1+aux2
 
-def insertThreeRowOrColumn(matrix,d,ind):
+def insertThreeRowOrColumn(matrix:PlanarDiagram,d:int,ind:Position):
     unconnectedStrand = set([matrix[auxInd] for auxInd in indicesNeedFree(ind,d) if matrix[auxInd]>0])
     if d==0:
         matrix = insert(matrix,ind[0],0,3,axis=0)
@@ -62,19 +63,19 @@ def insertThreeRowOrColumn(matrix,d,ind):
 
     return matrix,ind,unconnectedStrand      
 
-def indicesOfCross(ind,d):
+def indicesOfCross(ind:Position,d:int):
     return  [uDLF(d,ind),
              uDLF(d,uDLF(d+1,uDLF(d,ind))),
              uDLF(d-1,uDLF(d,uDLF(d,uDLF(d+1,uDLF(d,ind))))),
              uDLF(d-2,uDLF(d-1,uDLF(d-1,uDLF(d,uDLF(d,uDLF(d+1,uDLF(d,ind)))))))]
 
-def indicesFreeBeforeAdd(ind,d):
+def indicesFreeBeforeAdd(ind:Position,d:int):
     return [uDLF(d+1,uDLF(d,ind)),
             uDLF(d-1,uDLF(d,ind)),
             uDLF(d+1,uDLF(d,uDLF(d,uDLF(d,ind)))),
             uDLF(d-1,uDLF(d,uDLF(d,uDLF(d,ind))))]
 
-def addCrossToMatrix(matrix,cross,ind):
+def addCrossToMatrix(matrix:PlanarDiagram,cross:X,ind:Position):
     #print("     addCrossToMatrix:",cross)
     partsUnconnected = set()
     d = directionOfStrandWhenAdd(matrix,ind)
@@ -82,7 +83,7 @@ def addCrossToMatrix(matrix,cross,ind):
         matrix,ind = addThreeRowOrColumn(matrix,d,ind)
     if any([matrix[auxInd]!=0 for auxInd in indicesNeedFree(ind,d)]):
         matrix,ind,partsUnconnected = insertThreeRowOrColumn(matrix,d,ind)
-    s = cross.indexForStrand(matrix[ind])
+    s = cross.indexForStrand(matrix[ind])[0]
     isBelow = s%2 == 0
     isUpDown = d%2 == 0
     matrix[uDLF(d,uDLF(d,ind))] = (-1 if isUpDown else -2) if isBelow else (-2 if isUpDown else -1)
@@ -100,8 +101,8 @@ def addCrossToMatrix(matrix,cross,ind):
     return matrix,list(partsUnconnected)
 
 class NodoPD:
-    def __init__(self,pd,unconnectedStrands,remainCross,lengths):
-        self.pd = borderByZeros(pd)
+    def __init__(self,pd:PlanarDiagram,unconnectedStrands:list[Strand],remainCross:list[X],lengths:dict[Strand,int]):
+        self.pd:PlanarDiagram = borderByZeros(pd)
         self.unconnectedStrands = unconnectedStrands
         self.lengths = lengths
         self.remainCross = remainCross
@@ -122,12 +123,12 @@ class NodoPD:
                 ind = indices[0]
                 newPd = deepcopy(self.pd)
                 newDict = dict(self.lengths)
-                newPd,partDesconnet = addCrossToMatrix(newPd,cross,ind)
+                newPd,partDisconnected = addCrossToMatrix(newPd,cross,ind)
                 if debug:
                     print("Hijo: ",strand)
                     print(newPd)
                 newUnconnected = [s for s in self.unconnectedStrands if s!=strand]
-                for l in partDesconnet:
+                for l in partDisconnected:
                     newUnconnected.append(l)
                     if l in newDict.keys():
                         newDict.pop(l)
@@ -155,31 +156,7 @@ class NodoPD:
     def length(self):
         return sum(self.lengths.values())
 
-def conectaPlanarDiagram(k,matrix,remainCross,debug=False):
-    if debug: print("conectaPlanarDiagram")
-    queue = PriorityQueue[NodoPD]()
-    allStrands = [i for i in range(1,2*len(k.crosses)+1)]
-    tuples = [(connected(matrix,strand),strand) for strand in allStrands]
-    strandsDict = {strand:l for (c,l),strand in tuples if c}
-    strands = [strand for strand in allStrands if strand not in strandsDict.keys()]
-    if debug: print("unconnected", strands)
-    if len(remainCross)==0 and len(strands)==0:
-        return matrix,strandsDict
-    firstNode = NodoPD(matrix,strands,remainCross,strandsDict)
-    queue.put(firstNode.priority(),firstNode)
-    c = 0
-    while not queue.empty and c<100:
-        c+=1
-        node = queue.get()
-        for successor in node.successors(debug):
-            d = successor.priority()
-            if d == 0:
-                return successor.pd,successor.lengths
-            else:
-                queue.put(d,successor)
-    raise Exception("Se han acabado las opciones")
-
-def reconnect(pd,strand):
+def reconnect(pd:PlanarDiagram,strand:Strand):
     """Delete the path from the strand, and reconnect it."""
     indices = indicesOfNumberInMatrix(pd,strand)
     for ind in indices:
@@ -187,7 +164,7 @@ def reconnect(pd,strand):
             pd[ind] = 0
     return connectMatrixLength(pd,strand,strand)
 
-def compactPlanarDiagram(pd,lengths,debug=False):
+def compactPlanarDiagram(pd:PlanarDiagram,lengths:dict[Strand,int],debug=False):
     if debug:
         print("compactPlanarDiagram")
         print(lengths)
@@ -207,7 +184,7 @@ def compactPlanarDiagram(pd,lengths,debug=False):
             pd,l = reconnect(pd,strand)
             lengths[strand] = l
             if debug:
-                print("despues de reconectar")
+                print("después de reconectar")
                 print(pd)
         pd = borderByZeros(pd)
         if pd.shape == previousShape:
