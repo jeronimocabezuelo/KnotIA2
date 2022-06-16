@@ -43,7 +43,7 @@ class PriorityQueue(Generic[T]):
         #i = self.priorities().index(mi)
         #return self.queue.pop(i)[1]
     @property
-    def empty(self):
+    def isEmpty(self):
         """It tells us if the queue is empty."""
         return len(self.queue)==0
     @property
@@ -112,7 +112,7 @@ def connectOrigDest(matrix:np.ndarray,origin:Position,destiny:Position,caminoNum
     queue = PriorityQueue[Node]()
     cape = isCapeOfCross(matrix,origin)
     queue.put(distance(origin,destiny),Node(matrix,origin,destiny,0, None if cape==-1 else cape,0))
-    while not queue.empty:
+    while not queue.isEmpty:
         node = queue.get()
         if debug:
             print("-------")

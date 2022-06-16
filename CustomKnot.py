@@ -1,4 +1,5 @@
 from __future__ import annotations
+from time import time
 import numpy as np
 from DrawingKnots import *
 from AuxiliarFunctions import *
@@ -30,15 +31,13 @@ class CustomKnot:
             raise Exception("Incorrect type")
         self.pd = None
         self.pdz = None
-        self.isCrossValid()
-
-            
+        self.isKnotValid()
 
     def __repr__(self):
         return "Cross: "+self.crosses.__repr__()+"\nPlanar Diagrams:\n"+np.array2string(self.planarDiagrams(), suppress_small=True)
 
     def __eq__(self,obj:CustomKnot):
-        if type(self)!=type(obj):
+        if type(self)!=type(obj):      
             return False
         if len(self.crosses)!=len(obj.crosses):
             return False
@@ -63,6 +62,8 @@ class CustomKnot:
                     return False
             return True
         return False
+    def eval(self,s:str):
+        eval("self{}".format(s))
 
     def allRotation(self)->list[CustomKnot]:
         aux=[]
@@ -90,7 +91,7 @@ class CustomKnot:
         """It returns the number of strands."""
         return len(set([strand for cross in self.crosses for strand in cross.strands])) 
 
-    def isCrossValid(self):
+    def isKnotValid(self):
         """Generates an error if the knot is not correctly created."""
         for cross in self.crosses:
             cross.sort()
@@ -110,7 +111,7 @@ class CustomKnot:
         for i_c in range(len(self.crosses)):
             for i_p in range(len(self.crosses[i_c].strands)):
                 self.crosses[i_c].strands[i_p] =  mod((self.crosses[i_c].strands[i_p]+i),n)
-        self.isCrossValid()
+        self.isKnotValid()
         self.pd = None
         self.pdz = None
 
@@ -122,7 +123,7 @@ class CustomKnot:
             for i_c in range(len(self.crosses)):
                 for i_p in range(len(self.crosses[i_c].strands)):
                     self.crosses[i_c].strands[i_p] = n+1-self.crosses[i_c].strands[i_p]
-            self.isCrossValid()
+            self.isKnotValid()
             self.pd = None
             self.pdz = None
     
@@ -227,7 +228,7 @@ class CustomKnot:
             matrix = self.pd
             #print(matrix)
             #print(crossesCopy)
-        pd,lengths = conectaPlanarDiagram(self,matrix,crossesCopy)
+        pd,lengths = connectPlanarDiagram(self,matrix,crossesCopy)
         pd,lengths = compactPlanarDiagram(pd,lengths)
         pd = removeBorderOfZeros(pd)
         self.pd = pd
@@ -270,7 +271,7 @@ class CustomKnot:
             image = concat(image,imageRow,axis=0)
         return image
     
-    def crateALoop(self,l,typ,recalculatePd = False):
+    def createALoop(self,l,typ,recalculatePd = False):
         """Create a loop of Reidemeister's first move."""
         if len(self.crosses) == 0:
             self.pd = None
@@ -318,10 +319,10 @@ class CustomKnot:
             self.planarDiagrams()
         else:
             self.pd = None
-        self.isCrossValid()
+        self.isKnotValid()
         self.pdz = None
     
-    def isPosibleUndoALoop(self,cross):
+    def isPosibleUndoALoop(self,cross: X|Strand):
         """It tells us if it is possible to unLoop Reidemeister's first move on a cross."""
         if type(cross) == type(X(0,0,0,0)):
             (unique, counts) = np.unique(cross.strands, return_counts=True)
@@ -397,7 +398,7 @@ class CustomKnot:
             else:
                 self.pd = None
             self.pdz = None
-            self.isCrossValid()
+            self.isKnotValid()
             return True
         return False
 
@@ -490,7 +491,7 @@ class CustomKnot:
                     self.crosses = [X(3,1,4,6),X(5,3,6,2),X(4,1,5,2)]
                 else:
                     self.crosses = [X(1,5,2,4),X(2,5,3,6),X(3,1,4,6)]
-                self.isCrossValid()
+                self.isKnotValid()
                 self.pd = None
                 self.pdz = None
                 return True
@@ -557,7 +558,7 @@ class CustomKnot:
                 else:
                     self.crosses.append(X(l1  ,l2+4,l1+1,l2+3))
                     self.crosses.append(X(l1+1,l2+2,l1+2,l2+3))
-            self.isCrossValid()
+            self.isKnotValid()
             if recalculatePd:
                 pdCopy = deepcopy(self.pd)
                 for i in range(l1,n+1):
@@ -643,7 +644,7 @@ class CustomKnot:
                     self.crosses[c].strands[p] = mod(strand,n-4)
                 if debug:
                     print(strand,"--",self.crosses[c].strands[p])
-        self.isCrossValid()
+        self.isKnotValid()
         if recalculatePd:
             self.pd = removeCrossOfPD(self.pd,x1)
             self.pd = removeCrossOfPD(self.pd,x2)
@@ -687,6 +688,26 @@ class CustomKnot:
         return True
 
     def isPosibleReidemeisterIII(self,s1:Strand,s2:Strand,s3:Strand):
+        t1 = self.typeOfStrand(s1)
+        t2 = self.typeOfStrand(s2)
+        t3 = self.typeOfStrand(s3)
+        strandBelow = None #Debajo
+        strandMiddle = None #Medio
+        strandAbove = None #Encima
+        for i in range(3):
+            t = [t1,t2,t3][i]
+            s = [s1,s2,s3][i]
+            if t == StrandType.BELOW:
+                strandBelow = s
+            elif t == StrandType.MIDDLE:
+                strandMiddle = s
+            elif t == StrandType.ABOVE:
+                strandAbove = s
+        if strandBelow != None and strandMiddle != None and strandAbove != None:
+            return True, strandBelow, strandMiddle, strandAbove
+        return False, None, None, None
+
+    def isPosibleReidemeisterIII2(self,s1:Strand,s2:Strand,s3:Strand):
         """It tells us whether it is possible to make a Reidemeister move of the third type. It will return a bool and the strands Below, Middle and Above."""
         crosses = set()
         for strand in [s1,s2,s3]:
@@ -733,47 +754,23 @@ class CustomKnot:
         else:
             B,M,A = s1,s2,s3
         n = self.numberOfStrands
-        xsOld = [[X(B,A,mod(B-1,n),mod(A-1,n)),X(B,mod(M+1,n),mod(B+1,n),M),X(M,mod(A+1,n),mod(M-1,n),A)], #11 - 17 - 1
-                 [X(B,A,mod(B-1,n),mod(A-1,n)),X(B,mod(M-1,n),mod(B+1,n),M),X(M,mod(A+1,n),mod(M+1,n),A)], #12 - 18 - 2 
-                 [X(B,A,mod(B+1,n),mod(A-1,n)),X(B,mod(M-1,n),mod(B-1,n),M),X(M,mod(A+1,n),mod(M+1,n),A)], #13 - 15 - 3
-                 [X(B,A,mod(B+1,n),mod(A-1,n)),X(B,mod(M+1,n),mod(B-1,n),M),X(M,mod(A+1,n),mod(M-1,n),A)], #14 - 16 - 4
-                 [X(B,A,mod(B-1,n),mod(A+1,n)),X(B,mod(M+1,n),mod(B+1,n),M),X(M,mod(A-1,n),mod(M-1,n),A)], #15 - 13 - 5
-                 [X(B,A,mod(B-1,n),mod(A+1,n)),X(B,mod(M-1,n),mod(B+1,n),M),X(M,mod(A-1,n),mod(M+1,n),A)], #16 - 14 - 6
-                 [X(B,A,mod(B+1,n),mod(A+1,n)),X(B,mod(M-1,n),mod(B-1,n),M),X(M,mod(A-1,n),mod(M+1,n),A)], #17 - 11 - 7
-                 [X(B,A,mod(B+1,n),mod(A+1,n)),X(B,mod(M+1,n),mod(B-1,n),M),X(M,mod(A-1,n),mod(M-1,n),A)], #18 - 12 - 8
-                 [X(M,A,mod(M-1,n),mod(A-1,n)),X(B,M,mod(B+1,n),mod(M+1,n)),X(B,mod(A+1,n),mod(B-1,n),A)], #21 - 27 - 9
-                 [X(M,A,mod(M-1,n),mod(A-1,n)),X(B,M,mod(B-1,n),mod(M+1,n)),X(B,mod(A+1,n),mod(B+1,n),A)], #22 - 28 - 10
-                 [X(M,A,mod(M+1,n),mod(A-1,n)),X(B,M,mod(B-1,n),mod(M-1,n)),X(B,mod(A+1,n),mod(B+1,n),A)], #23 - 25 - 11
-                 [X(M,A,mod(M+1,n),mod(A-1,n)),X(B,M,mod(B+1,n),mod(M-1,n)),X(B,mod(A+1,n),mod(B-1,n),A)], #24 - 26 - 12
-                 [X(M,A,mod(M-1,n),mod(A+1,n)),X(B,M,mod(B+1,n),mod(M+1,n)),X(B,mod(A-1,n),mod(B-1,n),A)], #25 - 23 - 13
-                 [X(M,A,mod(M-1,n),mod(A+1,n)),X(B,M,mod(B-1,n),mod(M+1,n)),X(B,mod(A-1,n),mod(B+1,n),A)], #26 - 24 - 14
-                 [X(M,A,mod(M+1,n),mod(A+1,n)),X(B,M,mod(B-1,n),mod(M-1,n)),X(B,mod(A-1,n),mod(B+1,n),A)], #27 - 21 - 15
-                 [X(M,A,mod(M+1,n),mod(A+1,n)),X(B,M,mod(B+1,n),mod(M-1,n)),X(B,mod(A-1,n),mod(B-1,n),A)]] #28 - 22 - 16
-        xsNew = [[X(B,A,mod(B+1,n),mod(A+1,n)),X(B,mod(M-1,n),mod(B-1,n),M),X(M,mod(A-1,n),mod(M+1,n),A)], #11
-                 [X(B,A,mod(B+1,n),mod(A+1,n)),X(B,mod(M+1,n),mod(B-1,n),M),X(M,mod(A-1,n),mod(M-1,n),A)], #12
-                 [X(B,A,mod(B-1,n),mod(A+1,n)),X(B,mod(M+1,n),mod(B+1,n),M),X(M,mod(A-1,n),mod(M-1,n),A)], #13
-                 [X(B,A,mod(B-1,n),mod(A+1,n)),X(B,mod(M-1,n),mod(B+1,n),M),X(M,mod(A-1,n),mod(M+1,n),A)], #14
-                 [X(B,A,mod(B+1,n),mod(A-1,n)),X(B,mod(M-1,n),mod(B-1,n),M),X(M,mod(A+1,n),mod(M+1,n),A)], #15
-                 [X(B,A,mod(B+1,n),mod(A-1,n)),X(B,mod(M+1,n),mod(B-1,n),M),X(M,mod(A+1,n),mod(M-1,n),A)], #16
-                 [X(B,A,mod(B-1,n),mod(A-1,n)),X(B,mod(M+1,n),mod(B+1,n),M),X(M,mod(A+1,n),mod(M-1,n),A)], #17
-                 [X(B,A,mod(B-1,n),mod(A-1,n)),X(B,mod(M-1,n),mod(B+1,n),M),X(M,mod(A+1,n),mod(M+1,n),A)], #18
-                 [X(M,A,mod(M+1,n),mod(A+1,n)),X(B,M,mod(B-1,n),mod(M-1,n)),X(B,mod(A-1,n),mod(B+1,n),A)], #21
-                 [X(M,A,mod(M+1,n),mod(A+1,n)),X(B,M,mod(B+1,n),mod(M-1,n)),X(B,mod(A-1,n),mod(B-1,n),A)], #22
-                 [X(M,A,mod(M-1,n),mod(A+1,n)),X(B,M,mod(B+1,n),mod(M+1,n)),X(B,mod(A-1,n),mod(B-1,n),A)], #23
-                 [X(M,A,mod(M-1,n),mod(A+1,n)),X(B,M,mod(B-1,n),mod(M+1,n)),X(B,mod(A-1,n),mod(B+1,n),A)], #24
-                 [X(M,A,mod(M+1,n),mod(A-1,n)),X(B,M,mod(B-1,n),mod(M-1,n)),X(B,mod(A+1,n),mod(B+1,n),A)], #25
-                 [X(M,A,mod(M+1,n),mod(A-1,n)),X(B,M,mod(B+1,n),mod(M-1,n)),X(B,mod(A+1,n),mod(B-1,n),A)], #26
-                 [X(M,A,mod(M-1,n),mod(A-1,n)),X(B,M,mod(B+1,n),mod(M+1,n)),X(B,mod(A+1,n),mod(B-1,n),A)], #27
-                 [X(M,A,mod(M-1,n),mod(A-1,n)),X(B,M,mod(B-1,n),mod(M+1,n)),X(B,mod(A+1,n),mod(B+1,n),A)]] #28
+        xsPrueba = {}
+        i = 0
+        for s1 in [-1,+1]:
+            for s2 in [-1,+1]:
+                for s3 in [-1,+1]:
+                    i+=1
+                    xsPrueba[i] = [X(B,A,mod(B+s1,n),mod(A+s2,n)),X(B,mod(M+s3,n),mod(B-s1,n),M),X(M,mod(A-s2,n),mod(M-s3,n),A)]
+                    xsPrueba[i+10] = [X(M,A,mod(M+s1,n),mod(A+s2,n)),X(B,M,mod(B+s3,n),mod(M-s1,n)),X(B,mod(A-s2,n),mod(B-s3,n),A)]
 
-        for i in range(len(xsOld)):
-            xs = xsOld[i]
+        for key, xs in xsPrueba.items():
             if xs in self:
                 if len(set(xs))!=3:
                     continue
                 self.crosses = [cross for cross in self.crosses if cross not in xs]
-                self.crosses += xsNew[i]
-                self.isCrossValid()
+                associatedKey = 9-key if key<10 else 29-key
+                self.crosses += xsPrueba[associatedKey]
+                self.isKnotValid()
                 if recalculatePd:
                     for x in xs:
                         self.pd = removeCrossOfPD(self.pd,x)
@@ -791,6 +788,24 @@ class CustomKnot:
                 self.pdz = None
                 return True
         return False
+
+    def reduceUnnecessaryMov(self):
+        while True:
+            continueWhile = False
+            n = self.numberOfStrands
+            for i in range(1,n+1):
+                if self.undoALoop(i):
+                    continueWhile = True
+                    break
+            if continueWhile: continue
+            possibilities = [(l1,l2) for l1 in range(1,n+1) for l2 in range(l1,n+1) if (self.typeOfStrand(l1) == StrandType.ABOVE and self.typeOfStrand(l2) == StrandType.BELOW) or (self.typeOfStrand(l1) == StrandType.BELOW and self.typeOfStrand(l2) == StrandType.ABOVE)]
+            for (l1,l2) in possibilities:
+                if self.undoReidemeisterII(l1,l2):
+                    continueWhile = True
+                    break
+            if continueWhile: continue
+            break
+
 
     def planarDiagramZones(self):
         """Returns a planar diagram with the zones delimited with numbers and the number of zones.
@@ -810,7 +825,7 @@ class CustomKnot:
             indConectados=[base]
             cola = PriorityQueue()
             cola.put(0,Node(pd,base,None,0,))
-            while not cola.empty:
+            while not cola.isEmpty:
                 nodo = cola.get()
                 for sucesor in nodo.successors(i):
                     if not sucesor.origin in indConectados:
@@ -839,7 +854,7 @@ class CustomKnot:
                     strandToCreate = randrange(1,n+1)
                 if debug: print("strandToCreate",strandToCreate)
                 orientation = randrange(4)
-                self.crateALoop(strandToCreate,orientation)
+                self.createALoop(strandToCreate,orientation)
                 if debug: print("Hecho",strandToCreate,"orientation: ",orientation)
                 return True
             else:
@@ -891,10 +906,15 @@ class CustomKnot:
     def randomMovN(self,n: int,maxCrosses:int,percentage = False, debug = False):
         i = 0
         c = 0
+        if percentage: startTime = time()
         while i<n:
             c+=1
             if percentage:
-                print("percentage randomMovN: {:3.2f}".format((((i+1)/n)*100)),end="\r")
+                elapsedTime = time()-startTime
+                percent = (((i+1)/n)*100)
+                totalTime = elapsedTime*100/percent
+                remainTime = totalTime-elapsedTime
+                print("percentage randomMovN: {:3.2f}, time remaining: {}                                 ".format(percent,remainingTimeString(remainTime)),end="\r")
             if self.randomMov(maxCrosses,debug):
                 i+=1
                 c=0
@@ -965,9 +985,9 @@ def crossWithStrandAndDirection(knot:CustomKnot,strand:Strand,direction:bool)->t
             if cross.strands[(i+2)%4] == mod(strand + (1 if direction else -1),knot.numberOfStrands):
                 return cross,i
 
-def conectaPlanarDiagram(k:CustomKnot,matrix:PlanarDiagram,remainCross:list[X],debug=False)->tuple[PlanarDiagram, dict[Strand, int]]:
+def connectPlanarDiagram(k:CustomKnot,matrix:PlanarDiagram,remainCross:list[X],debug=False)->tuple[PlanarDiagram, dict[Strand, int]]:
     if debug: print("conectaPlanarDiagram")
-    queue = PriorityQueue[NodoPD]()
+    queue = PriorityQueue[NodePD]()
     allStrands:list[Strand] = [i for i in range(1,2*len(k.crosses)+1)]
     tuples = [(connected(matrix,strand),strand) for strand in allStrands]
     strandsDict = {strand:l for (c,l),strand in tuples if c}
@@ -975,10 +995,10 @@ def conectaPlanarDiagram(k:CustomKnot,matrix:PlanarDiagram,remainCross:list[X],d
     if debug: print("unconnected", strands)
     if len(remainCross)==0 and len(strands)==0:
         return matrix,strandsDict
-    firstNode = NodoPD(matrix,strands,remainCross,strandsDict)
+    firstNode = NodePD(matrix,strands,remainCross,strandsDict)
     queue.put(firstNode.priority(),firstNode)
     c = 0
-    while not queue.empty and c<100:
+    while not queue.isEmpty and c<100:
         c+=1
         node = queue.get()
         for successor in node.successors(debug):

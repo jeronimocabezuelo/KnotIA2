@@ -1,0 +1,96 @@
+@startuml Diagrama de Clases
+
+package "X" #DDDDDD {
+    class X {
+        +strands
+        +sort()
+        +isStrandAbove()
+    }
+}
+package "Path" #DDDDDD {
+    class PriorityQueue {
+        -priorities
+        -items
+        +isEmpty
+        +len
+        +put()
+        +get()
+    }
+
+    class Node {
+        -matrix
+        -origin
+        -destiny
+        -length
+        -previousDirection
+        -directionsChanges
+        +successors()
+    }
+
+    circle "distance()"
+    circle "connect()"
+    "distance()" -up-* Node
+    Node -up-* "connect()"
+    PriorityQueue -up-* "connect()"
+
+}
+
+package "PlanarDiagram" #DDDDDD {
+    class NodePD {
+        -pd
+        -unconnectedStrands
+        -lengths
+        -remainCross
+        +successors()
+    }
+    circle "connectPlanarDiagram()"
+
+    NodePD-up-*"connectPlanarDiagram()"
+    "connect()"-*"connectPlanarDiagram()"
+}
+
+package "CustomKnot" #DDDDDD {
+    class CustomKnot {
+    -pd
+    +crosses
+    +numberOfStrands
+    ----
+    -isKnotValid()
+    -strandsConnectedWith()
+    +typeOfStrand()
+    ..same Knot..
+    +allRotation()
+    +rotate()
+    +inverse()
+    ..drawing..
+    +planarDiagrams()
+    +image()
+    ..Reidemaister Moves..
+    +createALoop()
+    +isPosibleUndoALoop()
+    +undoALoop()
+    +isPosibleCreateReidemeisterII()
+    +createReidemeisterII()
+    +isPosibleUndoReidemeisterII()
+    +undoReidemeisterII()
+    +isPosibleReidemeisterIII()
+    +reidemeisterIII()
+    ..Building other knots..
+    +randomMov()
+    +randomMovN()
+    +reduceUnnecessaryMov()
+    }
+
+    enum StrandType {
+    ABOVE
+    MIDDLE
+    BELOW
+    }
+
+}
+
+    "connectPlanarDiagram()"-*CustomKnot
+    X -left-* CustomKnot
+    StrandType -up-* CustomKnot
+    
+@enduml

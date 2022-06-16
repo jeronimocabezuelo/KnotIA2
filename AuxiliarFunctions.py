@@ -1,3 +1,4 @@
+from ast import Str
 import numpy as np
 from copy import copy
 
@@ -245,5 +246,16 @@ def isCapeOfCross(pd:PlanarDiagram,ind:Position):
             return i
     return -1
 
-
-
+def remainingTimeString(time:float)->str:
+    if time<1:
+        return "<1s"
+    time = int(time)
+    if time<60:
+        return str(time)+"s"
+    minutes = time//60
+    second = time%60    
+    if minutes<60:
+        return str(minutes)+"min "+str(second)+"s"
+    hours = minutes//60
+    minutes = minutes%60
+    return str(hours)+"h "+str(minutes)+"min "+str(second)+"s"

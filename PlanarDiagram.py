@@ -100,13 +100,13 @@ def addCrossToMatrix(matrix:PlanarDiagram,cross:X,ind:Position):
                 matrix[j] = 0
     return matrix,list(partsUnconnected)
 
-class NodoPD:
+class NodePD:
     def __init__(self,pd:PlanarDiagram,unconnectedStrands:list[Strand],remainCross:list[X],lengths:dict[Strand,int]):
         self.pd:PlanarDiagram = borderByZeros(pd)
         self.unconnectedStrands = unconnectedStrands
         self.lengths = lengths
         self.remainCross = remainCross
-    def successors(self,debug=False)->list[NodoPD]:
+    def successors(self,debug=False)->list[NodePD]:
         if debug:
             print("-------")
             print("Padre:")
@@ -132,7 +132,7 @@ class NodoPD:
                     newUnconnected.append(l)
                     if l in newDict.keys():
                         newDict.pop(l)
-                successorsArray.append(NodoPD(newPd,newUnconnected,crossCopy,newDict))
+                successorsArray.append(NodePD(newPd,newUnconnected,crossCopy,newDict))
             else:
                 gapsCreated = False
                 length,matrixConnected,_,_ = connect(self.pd,strand,strand)
@@ -148,7 +148,7 @@ class NodoPD:
                     print("Hijo: ",strand)
                     print(matrixConnected)
                 if gapsCreated: matrixConnected,newDict = compactPlanarDiagram(matrixConnected,newDict)
-                successorsArray .append(NodoPD(matrixConnected,[s for s in self.unconnectedStrands if s != strand],deepcopy(self.remainCross),newDict))
+                successorsArray .append(NodePD(matrixConnected,[s for s in self.unconnectedStrands if s != strand],deepcopy(self.remainCross),newDict))
         successorsArray .sort(key=lambda x: x.length())
         return successorsArray 
     def priority(self):
