@@ -1,4 +1,5 @@
 from __future__ import annotations
+from tracemalloc import start
 from CustomKnot import *
 from random import *
 import numpy as np
@@ -10,10 +11,12 @@ MutationRate = 0.7
 MutationRateType = 0.1
 MutationRateGene = 0.3
 MutationRateGenes = 0.4
+MutationRateGenesNotEffective = 0.7
 
 class Gene:
     def __init__(self,type: int, g1: int, g2: int, g3: int):
         self.gene = [type,g1,g2,g3]
+        self.isEffective:bool = True
     
     def __repr__(self):
         return "Gene("+str(self.type)+","+str(self.gene[1])+","+str(self.gene[2])+","+str(self.gene[3])+")"
@@ -38,45 +41,26 @@ class Gene:
         if type == 1:
             orientation = (self.gene[2] + self.gene[3])%4
             knot.createALoop(strand1,orientation)
-            return ".crateALoop({},{})".format(strand1,orientation)
+            self.isEffective = True
+            return ".createALoop({},{})".format(strand1,orientation)
         elif type == 2:
             if knot.undoALoop(strand1):
+                self.isEffective = True
                 return ".undoALoop({})".format(strand1)
         elif type == 3:
             orientation = self.gene[3]%2
             if knot.createReidemeisterII(strand1,strand2,orientation):
+                self.isEffective = True
                 return ".createReidemeisterII({},{},{})".format(strand1,strand2,orientation)
         elif type == 4:
             if knot.undoReidemeisterII(strand1,strand2):
+                self.isEffective = True
                 return ".undoReidemeisterII({},{})".format(strand1,strand2)
         elif type == 5:
             if knot.reidemeisterIII(strand1,strand2,strand3):
+                self.isEffective = True
                 return ".reidemeisterIII({},{},{})".format(strand1,strand2,strand3)
-        return ""
-        
-    def applyToKnot2(self,knot:CustomKnot)->str:
-        type = mod(self.type,5)
-        n = knot.numberOfStrands
-        strand1 = mod(self.gene[1],n)
-        strand2 = mod(self.gene[2],n)
-        strand3 = mod(self.gene[3],n)
-        if type == 1:
-            orientation = (self.gene[2] + self.gene[3])%4
-            knot.createALoop(strand1,orientation)
-            return ".crateALoop({},{})".format(strand1,orientation)
-        elif type == 2:
-            if knot.undoALoop(strand1):
-                return ".undoALoop({})".format(strand1)
-        elif type == 3:
-            orientation = self.gene[3]%2
-            if knot.createReidemeisterII(strand1,strand2,orientation):
-                return ".createReidemeisterII({},{},{})".format(strand1,strand2,orientation)
-        elif type == 4:
-            if knot.undoReidemeisterII(strand1,strand2):
-                return ".undoReidemeisterII({},{})".format(strand1,strand2)
-        elif type == 5:
-            if knot.reidemeisterIII(strand1,strand2,strand3):
-                return ".reidemeisterIII({},{},{})".format(strand1,strand2,strand3)
+        self.isEffective = False
         return ""
         
 def randomGene()->Gene:
@@ -106,7 +90,10 @@ class Genome:
     def mutate(self):
         for gene in self.genes:
             gene.mutate()
-        if random()<MutationRateGenes:
+            if not gene.isEffective:
+                if random() < MutationRateGenesNotEffective:
+                    self.genes.remove(gene)
+        while random()<MutationRateGenes:
             addOrDelete = randrange(2)
             if addOrDelete:
                 if len(self.genes)>0:
@@ -132,8 +119,8 @@ class IndividualKnot:
     def __init__(self, knot: CustomKnot, genome: Genome = None, minGenes = 5, maxGenes = 12):
         self.knot = knot
         if genome == None:
-            self.genome = Genome()
-            #self.genome = randomGenome(minGenes = minGenes, maxGenes = maxGenes)
+            #self.genome = Genome()
+            self.genome = randomGenome(minGenes = minGenes, maxGenes = maxGenes)
         else: self.genome = genome
 
     @property
@@ -145,7 +132,6 @@ class IndividualKnot:
     def mutate(self):
         self.genome.mutate()
     
-        
 def crossover(motherGenome: Genome, fatherGenome: Genome):
     motherPoint = randrange(len(motherGenome.genes)) if len(motherGenome.genes) != 0 else 0
     fatherPoint = randrange(len(fatherGenome.genes)) if len(fatherGenome.genes) != 0 else 0
@@ -160,128 +146,89 @@ class PopulationKnot:
         self.objetiveKnot = objetiveKnot
         self.population: list[IndividualKnot] = []
         self.similarities = Similarity(objetiveKnot)
+        self._numberOfIndividuals = numberOfIndividuals
         for _ in range(numberOfIndividuals):
             individual = IndividualKnot(knot)
             self.population.append(individual)
     
-    def selection(self,percentage: int = 50)->IndividualKnot | None:
-        #print(" selection:")
-        #start = time()
-        listSimilarity:list[tuple[float,IndividualKnot]] = []
-        for i in range(len(self.population)):
-            #end = time()
-            #print("time individual init", end-start)
-            individual = self.population[i]
-            percent = ((i+1)/len(self.population))*100
-            print("  percentage selection calculate Similarity: {:3.2f}   ".format(percent),end="\r")
-        #for individual in self.population:
-            computedKnot, moves = individual.computedKnot
-            #end = time()
-            #print("time individual computedKnot", end-start)
-            similar = self.similarities[computedKnot]
-            #end = time()
-            #print("time individual similarities", end-start)
-            #print(similar,moves)
-            if similar == 0 or computedKnot == self.objetiveKnot:
-                #print()
-                print(" Encontrado",moves)
-                return individual
-            #end = time()
-            #print("time individual check", end-start)
-            listSimilarity.append((similar,individual))
-            #end = time()
-            #print("time individual final", end-start)
-        #print(listSimilarity)
-        print("                                                                 ",end="\r")
-        print("  maxSimilarity: ",max([similarity for similarity,_ in listSimilarity]))
-        print("  minSimilarity: ",min([similarity for similarity,_ in listSimilarity]))
-        
-        listSimilarity.sort(key= lambda i : i[0])
-
-        numberOfSelection = int((percentage/100)*len(self.population))
-        newPopulation = listSimilarity[0:numberOfSelection]
-        newPopulation = [individual for _,individual in newPopulation]
-        
-        self.population = deepcopy(newPopulation)
-
-    def selection2(self,percentage: int = 50)->IndividualKnot | None:
-        #print(" selection:")
-        #start = time()
+    def selection(self,times: bool = False,debug=0):
+        if times: start = time()
         listSimilarity:list[float] = []
         for i in range(len(self.population)):
-            #end = time()
-            #print("time individual init", end-start)
+            if times: print("time individual init", time()-start)
             individual = self.population[i]
             percent = ((i+1)/len(self.population))*100
-            print("  percentage selection calculate Similarity: {:3.2f}   ".format(percent),end="\r")
-        #for individual in self.population:
+            if debug>0: print("  percentage selection calculate Similarity: {:3.2f}   ".format(percent),end="\r")
             computedKnot, moves = individual.computedKnot
-            #end = time()
-            #print("time individual computedKnot", end-start)
+            if times: print("time individual computedKnot", time()-start)
             similar = self.similarities[computedKnot]
-            #end = time()
-            #print("time individual similarities", end-start)
-            #print(similar,moves)
+            if times: print("time individual similarities", time()-start)
             if similar == 0 or computedKnot == self.objetiveKnot:
-                #print()
-                print(" Encontrado",moves)
+                if debug>0: print(); print(" Encontrado",moves)
                 return individual
-            #end = time()
-            #print("time individual check", end-start)
+            if times: print("time individual check", time()-start)
             listSimilarity.append(similar)
-            #end = time()
-            #print("time individual final", end-start)
-        #print(listSimilarity)
-        print("                                                                 ",end="\r")
-        print("  maxSimilarity: ",max(listSimilarity))
-        print("  minSimilarity: ",min(listSimilarity))
+            if times: print("time individual final", time()-start)
+        if debug>0:
+            print("                                                                 ",end="\r")
+            print("  maxSimilarity: ",max(listSimilarity))
+            print("  minSimilarity: ",min(listSimilarity))
+            
+        #listSimilarity.sort(key= lambda i : i[0])
+        #
+        #numberOfSelection = int((percentage/100)*len(self.population))
+        #newPopulation = listSimilarity[0:numberOfSelection]
+        #newPopulation = [individual for _,individual in newPopulation]
+
         listSimilarity = [1/(i+1) for i in listSimilarity]
         s = sum(listSimilarity)
         listSimilarity = [i/s for i in listSimilarity]
-        numberOfSelection = int((percentage/100)*len(self.population))
-        newPopulation: list[IndividualKnot] = list(np.random.choice(self.population, numberOfSelection, p = listSimilarity, replace=False))
+        newPopulation: list[IndividualKnot] = list(np.random.choice(self.population, self._numberOfIndividuals, p = listSimilarity, replace=False))
+        
         self.population = deepcopy(newPopulation)
     
-    def crossover(self):
-        #print(" crossover:")
+    def crossover(self,debug=0):
         shuffle(self.population)
         newPopulation: list[IndividualKnot] = []
         while len(self.population)>1:
-            print("  remaining individuals: {}   ".format(len(self.population)),end="\r")
+            #start = time()
+            if debug>0: print("  crossover: remaining individuals: {}   ".format(len(self.population)),end="\r")
             mother = self.population.pop()
             father = self.population.pop()
             for genome in crossover(mother.genome,father.genome):
                 newPopulation.append(IndividualKnot(self.knot,genome))
-        print("                                                                 ",end="\r")
-        #print(" crossover end")
+            #print("Time:",time()-start)
+        if debug>0: print("                                                                 ",end="\r")
         self.population = newPopulation
     
-    def mutate(self):
-        #print(" mutate")
+    def mutate(self,debug=0):
         for i in range(len(self.population)):
             percent = ((i+1)/len(self.population))*100
-            print("  percentage mutate: {:3.2f}   ".format(percent),end="\r")
+            if debug>0: print("  percentage mutate: {:3.2f}   ".format(percent),end="\r")
             individual = self.population[i]
         #for individual in self.population:
-            if random() < MutationRate:
+            while random() < MutationRate:
                 individual.mutate()
-        print("                                                                 ",end="\r")
+        if debug>0: print("                                                                 ",end="\r")
 
-    def newGeneration(self, percentage: int = 50):
-        a = self.selection(percentage=percentage)
-        if a != None:
+    def newGeneration(self, debug=0):
+        self.mutate(debug=debug)
+        self.crossover(debug=debug)
+        a:IndividualKnot = self.selection(debug=debug)
+        if a == None:
+            pass
+        else:
             return a
-        self.mutate()
-        self.crossover()
 
-
-def areSameKnotGA(knot1:CustomKnot, knot2: CustomKnot, numberOfIndividuals = 100,numberOfGenerations = 100)->tuple[bool,IndividualKnot|None]:
+def areSameKnotGA(knot1:CustomKnot, knot2: CustomKnot, numberOfIndividuals = 100,numberOfGenerations = 100, debug=0)->tuple[bool,IndividualKnot|None]:
+    if knot1 == knot2:
+        return True, IndividualKnot(knot1,Genome())
     population = PopulationKnot(knot1,knot2,numberOfIndividuals=numberOfIndividuals)
     c=0
     while c<numberOfGenerations:
         c+=1
-        print("Generation ", c)
-        a = population.newGeneration()
+        if debug>0: print("Generation ", c)
+        a = population.newGeneration(debug=debug)
         if a != None:
             return True, a
     return False, None

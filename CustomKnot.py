@@ -31,21 +31,35 @@ class CustomKnot:
             raise Exception("Incorrect type")
         self.pd = None
         self.pdz = None
+        self._reprForHash = None
         self.isKnotValid()
 
     def __repr__(self):
         return "Cross: "+self.crosses.__repr__()+"\nPlanar Diagrams:\n"+np.array2string(self.planarDiagrams(), suppress_small=True)
+
+    def forMathematica(self):
+        aux = "PD["
+        for cross in self.crosses:
+            aux += cross.forMathematica()
+            aux += ","
+        aux = aux[:len(aux)-1]
+        aux += "]"
+        
+        return aux
 
     def __eq__(self,obj:CustomKnot):
         if type(self)!=type(obj):      
             return False
         if len(self.crosses)!=len(obj.crosses):
             return False
+        if len(self.crosses) == 0 and len(obj.crosses) == 0:
+            return True
         n = self.numberOfStrands
         uno = deepcopy(self)
-        for _ in range(2):
-            for _ in range(n):
+        for inv in range(2):
+            for rot in range(n):
                 if not sum([not i in uno.crosses for i in obj.crosses]):
+                    #print("inv:",inv,", rot:",rot)
                     return True
                 uno.rotate(n=n)
             uno.inverse(n=n)
@@ -63,7 +77,19 @@ class CustomKnot:
             return True
         return False
     def eval(self,s:str):
-        eval("self{}".format(s))
+        return eval("self{}".format(s))
+
+    def allRotationYield(self):
+        n = self.numberOfStrands
+        uno = deepcopy(self)
+        if n == 0:
+            yield uno
+        for i in range(2):
+            for r in range(n):
+                #print("i:",i,"r:",r)
+                yield deepcopy(uno)
+                uno.rotate(n=n)
+            uno.inverse(n=n)
 
     def allRotation(self)->list[CustomKnot]:
         aux=[]
@@ -75,13 +101,19 @@ class CustomKnot:
                 uno.rotate(n=n)
             uno.inverse(n=n)
         return aux
-
-    def __hash__(self):
-        #start = time()
+    @property
+    def representationForHash(self)->str:
+        if self._reprForHash != None:
+            return deepcopy(self._reprForHash)
         s = set([k.crosses.__repr__() for k in self.allRotation()])
         a = list(s)
         a = sorted(a)
-        h = hash(a.__repr__())
+        self._reprForHash = a.__repr__()
+        return deepcopy(self.representationForHash)
+
+    def __hash__(self):
+        #start = time()
+        h = hash(self.representationForHash)
         #end = time()
         #print("Time hash",end - start)        
         return h
@@ -275,6 +307,7 @@ class CustomKnot:
         """Create a loop of Reidemeister's first move."""
         if len(self.crosses) == 0:
             self.pd = None
+            self._reprForHash = None
             self.crosses.append(X(1,2,2,1))
         else:
             #Check si este strand esta en el nudo
@@ -321,6 +354,7 @@ class CustomKnot:
             self.pd = None
         self.isKnotValid()
         self.pdz = None
+        self._reprForHash = None
     
     def isPosibleUndoALoop(self,cross: X|Strand):
         """It tells us if it is possible to unLoop Reidemeister's first move on a cross."""
@@ -398,6 +432,7 @@ class CustomKnot:
             else:
                 self.pd = None
             self.pdz = None
+            self._reprForHash = None
             self.isKnotValid()
             return True
         return False
@@ -494,6 +529,7 @@ class CustomKnot:
                 self.isKnotValid()
                 self.pd = None
                 self.pdz = None
+                self._reprForHash = None
                 return True
             else:
                 if debug:
@@ -588,6 +624,7 @@ class CustomKnot:
             else:
                 self.pd = None
             self.pdz = None
+            self._reprForHash = None
             return True
         else:
             if debug:
@@ -685,9 +722,13 @@ class CustomKnot:
         else:
             self.pd = None
         self.pdz = None
+        self._reprForHash = None
         return True
 
     def isPosibleReidemeisterIII(self,s1:Strand,s2:Strand,s3:Strand):
+        n = self.numberOfStrands
+        if s1 == mod(s2+1,n) or s1 == mod(s2-1,n) or s1 == mod(s3+1,n) or s1 == mod(s3-1,n) or s3 == mod(s2+1,n) or s3 == mod(s2-1,n):
+            return False, None, None, None
         t1 = self.typeOfStrand(s1)
         t2 = self.typeOfStrand(s2)
         t3 = self.typeOfStrand(s3)
@@ -786,6 +827,7 @@ class CustomKnot:
                 else:
                     self.pd = None
                 self.pdz = None
+                self._reprForHash = None
                 return True
         return False
 
@@ -837,73 +879,87 @@ class CustomKnot:
         self.pdz = pd
         return self.planarDiagramZones()
 
-    def randomMov(self,maxCrosses:int = 100,debug=False):
+    def randomMov(self,maxStrands:int = 100,debug=False) -> Tuple[bool,str|None]:
         typeMov = randrange(1,4)
         if debug: print("-------") 
         n = self.numberOfStrands
         if debug: print("number Of Strands:",n)
         if debug: print(self)
         if debug: print("type, ", typeMov)
-        if typeMov == 1:
-            createOrUndo = randrange(2) if n< maxCrosses  else 0
-            if createOrUndo:
-                if debug: print("Create")
-                if n == 0:
-                    strandToCreate = 1
-                else:
-                    strandToCreate = randrange(1,n+1)
-                if debug: print("strandToCreate",strandToCreate)
-                orientation = randrange(4)
-                self.createALoop(strandToCreate,orientation)
-                if debug: print("Hecho",strandToCreate,"orientation: ",orientation)
-                return True
-            else:
-                if debug: print("undo")
-                posibleCross = [cross for cross in self.crosses if self.isPosibleUndoALoop(cross)]
-                if len(posibleCross)>0:
-                    randomCross = choice(posibleCross)
-                    if debug: print("randomCross",randomCross)
-                    self.undoALoop(randomCross)
-                    if debug: print("Hecho",randomCross)
-                    return True
-        elif typeMov == 2:
-            createOrUndo = randrange(2) if n < maxCrosses  else 0
-            if debug: print("create") if createOrUndo else print("undo")
-            possibilities = [(l1,l2) for l1 in range(1,n+1) for l2 in range(1,n+1)]#El segundo puede que sea desde l1?
-            if not createOrUndo: possibilities = [(l1,l2) for (l1,l2) in possibilities if (self.typeOfStrand(l1) == StrandType.ABOVE and self.typeOfStrand(l2) == StrandType.BELOW) or (self.typeOfStrand(l1) == StrandType.BELOW and self.typeOfStrand(l2) == StrandType.ABOVE)]
-            shuffle(possibilities)
-            while possibilities:
-                (l1,l2) = possibilities.pop(0)
-                if createOrUndo:
-                    orientation = randrange(2)
-                    if debug: print(l1,l2,orientation)
-                    if self.createReidemeisterII(l1,l2,orientation):
-                        if debug: print("Hecho",l1,l2, "orientation", orientation)
-                        return True
-                else:
-                    if debug: print("intentando:", l1,l2)
-                    if self.undoReidemeisterII(l1,l2):
-                        if debug: print("Hecho",l1,l2)
-                        return True
-        elif typeMov == 3:
-            possibilities = {StrandType.ABOVE:[], StrandType.MIDDLE:[],StrandType.BELOW:[]}
-            
-            for l in range(1,n+1):
-                t = self.typeOfStrand(l)
-                possibilities[t].append(l)
-            possibilities = [(l1,l2,l3) for l1 in possibilities[StrandType.BELOW] for l2 in possibilities[StrandType.MIDDLE] for l3 in possibilities[StrandType.ABOVE]]
-            possibilities = [(l1,l2,l3) for (l1,l2,l3) in possibilities if mod(l1+1,n)!=l2 and mod(l1-1,n)!=l2 and mod(l1+1,n)!=l3 and mod(l1-1,n)!=l3 and mod(l2+1,n)!=l3 and mod(l2-1,n)!=l3]
-            shuffle(possibilities)
-            while possibilities:
-                (l1,l2,l3) = possibilities.pop(0)
-                if debug: print(l1,l2,l3)
-                if self.reidemeisterIII(l1,l2,l3,check=False):
-                    if debug: print("Hecho III")
-                    return True
-            if debug: print("No se puede hacer")
-        return False
+        types = [1,2,3]
+        shuffle(types)
+        while len(types)>0:
+            typeMov = types.pop()
+            if typeMov == 1:
+                createOrUndoList = [0,1] if n<maxStrands else [0]
+                shuffle(createOrUndoList)
+                while len(createOrUndoList)>0:
+                    createOrUndo = createOrUndoList.pop()
+                    if createOrUndo:
+                        if debug: print("Create")
+                        if n == 0:
+                            strandToCreate = 1
+                        else:
+                            strandToCreate = randrange(1,n+1)
+                        if debug: print("strandToCreate",strandToCreate)
+                        orientation = randrange(4)
+                        self.createALoop(strandToCreate,orientation)
+                        if debug: print("Hecho",strandToCreate,"orientation: ",orientation)
+                        return True ,".createALoop({},{})".format(strandToCreate,orientation)
+                    else:
+                        if debug: print("undo")
+                        posibleCross = [cross for cross in self.crosses if self.isPosibleUndoALoop(cross)]
+                        if len(posibleCross)>0:
+                            randomCross = choice(posibleCross)
+                            if debug: print("randomCross",randomCross)
+                            self.undoALoop(randomCross)
+                            if debug: print("Hecho",randomCross)
+                            return True, ".undoALoop({})".format(randomCross)
+            elif typeMov == 2:
+                createOrUndoList = [0,1] if n<maxStrands else [0]
+                shuffle(createOrUndoList)
+                while len(createOrUndoList)>0:
+                    createOrUndo = createOrUndoList.pop()
+                    createOrUndo = randrange(2) if n < maxStrands  else 0
+                    if debug: print("create") if createOrUndo else print("undo")
+                    possibilities = [(l1,l2) for l1 in range(1,n+1) for l2 in range(1,n+1)]#El segundo puede que sea desde l1?
+                    if not createOrUndo: possibilities = [(l1,l2) for (l1,l2) in possibilities if (self.typeOfStrand(l1) == StrandType.ABOVE and self.typeOfStrand(l2) == StrandType.BELOW) or (self.typeOfStrand(l1) == StrandType.BELOW and self.typeOfStrand(l2) == StrandType.ABOVE)]
+                    shuffle(possibilities)
+                    while possibilities:
+                        (l1,l2) = possibilities.pop()
+                        if createOrUndo:
+                            orientation = randrange(2)
+                            if debug: print(l1,l2,orientation)
+                            if self.createReidemeisterII(l1,l2,orientation):
+                                if debug: print("Hecho",l1,l2, "orientation", orientation)
+                                return True, ".createReidemeisterII({},{},{})".format(l1,l2,orientation)
+                        else:
+                            if debug: print("intentando:", l1,l2)
+                            if self.undoReidemeisterII(l1,l2):
+                                if debug: print("Hecho",l1,l2)
+                                return True, ".undoReidemeisterII({},{})".format(l1,l2)
+            elif typeMov == 3:
+                possibilities = {StrandType.ABOVE:[], StrandType.MIDDLE:[],StrandType.BELOW:[]}
+                
+                for l in range(1,n+1):
+                    t = self.typeOfStrand(l)
+                    possibilities[t].append(l)
+                possibilities = [(l1,l2,l3) for l1 in possibilities[StrandType.BELOW] for l2 in possibilities[StrandType.MIDDLE] for l3 in possibilities[StrandType.ABOVE]]
+                possibilities = [(l1,l2,l3) for (l1,l2,l3) in possibilities if mod(l1+1,n)!=l2 and mod(l1-1,n)!=l2 and mod(l1+1,n)!=l3 and mod(l1-1,n)!=l3 and mod(l2+1,n)!=l3 and mod(l2-1,n)!=l3]
+                shuffle(possibilities)
+                while possibilities:
+                    (l1,l2,l3) = possibilities.pop()
+                    if debug: print(l1,l2,l3)
+                    if self.reidemeisterIII(l1,l2,l3,check=False):
+                        if debug: print("Hecho III")
+                        return True ,".reidemeisterIII({},{},{},check=False)".format(l1,l2,l3)
+                if debug: print("No se puede hacer")
+            return False, ""
 
-    def randomMovN(self,n: int,maxCrosses:int,percentage = False, debug = False):
+    def randomMovN(self,n: int,maxStrands:int = None,percentage = False, debug = False):
+        if maxStrands == None:
+            maxStrands = 4*self.numberOfStrands
+        movs:list[str] = []
         i = 0
         c = 0
         if percentage: startTime = time()
@@ -914,10 +970,12 @@ class CustomKnot:
                 percent = (((i+1)/n)*100)
                 totalTime = elapsedTime*100/percent
                 remainTime = totalTime-elapsedTime
-                print("percentage randomMovN: {:3.2f}, time remaining: {}                                 ".format(percent,remainingTimeString(remainTime)),end="\r")
-            if self.randomMov(maxCrosses,debug):
+                print("percentage randomMovN: {:3.2f}, numberOfStrands: {} ,time remaining: {}                                 ".format(percent,self.numberOfStrands,remainingTimeString(remainTime)),end="\r")
+            b,mov = self.randomMov(maxStrands,debug)
+            if b:
                 i+=1
                 c=0
+                movs.append(mov)
             if c == 100:
                 print("Parece que no se pueden hacer movimientos")
                 break

@@ -1,0 +1,49 @@
+@startuml Diagrama de Clases
+
+package "KnotStar" #DDDDDD {
+    class NodeKnot {
+        +knot
+        +mov
+        +similarity
+        +priority
+        -successorsICreate()
+        -successorsIUndo()
+        -successorsI()
+        -successorsIICreate()
+        -successorsIIUndo()
+        -successorsII()
+        -successorsIII()
+        +successors()
+    }
+
+    class PriorityQueueNodeKnot {
+        -queue
+        +empty
+        +len
+        +put()
+        +get()
+        +updateSimilarities()
+    }
+
+    class SimilarityCache {
+        -cache
+        -_len
+        -_calls
+        +similarity()
+        +__len__()
+    }
+
+    circle "similarity()"
+
+    circle "areSameKnotsAStar()"
+    circle "areSameKnotsAStar2()"
+    "similarity()" -up-* "areSameKnotsAStar()"
+    "similarity()" -up-* SimilarityCache
+
+    SimilarityCache --* "areSameKnotsAStar2()"
+    PriorityQueueNodeKnot --* "areSameKnotsAStar2()"
+    PriorityQueueNodeKnot --* "areSameKnotsAStar()"
+    NodeKnot -right-* PriorityQueueNodeKnot
+}
+    
+@enduml

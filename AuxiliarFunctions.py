@@ -1,7 +1,7 @@
 from ast import Str
 import numpy as np
 from copy import copy
-
+from typing import TypeVar
 
 Coordinate = int
 Position = tuple[Coordinate,Coordinate]
@@ -259,3 +259,11 @@ def remainingTimeString(time:float)->str:
     hours = minutes//60
     minutes = minutes%60
     return str(hours)+"h "+str(minutes)+"min "+str(second)+"s"
+
+_T = TypeVar('_T')
+
+class sset(set):
+    def add(self, __element: _T) -> bool:
+        prev_len = len(self)
+        super().add(__element) # O(N log N) lookup
+        return len(self) != prev_len

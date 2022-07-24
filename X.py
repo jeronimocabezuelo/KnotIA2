@@ -19,6 +19,9 @@ class X:
             self.strands = [x3,x4,x1,x2]
     def __repr__(self):
         return "X("+str(self.strands[0])+","+str(self.strands[1])+","+str(self.strands[2])+","+str(self.strands[3])+")"
+
+    def forMathematica(self):
+        return "X["+str(self.strands[0])+","+str(self.strands[1])+","+str(self.strands[2])+","+str(self.strands[3])+"]"
     def __eq__(self,obj):
         if type(self)!=type(obj):
             return False
@@ -36,7 +39,10 @@ class X:
     def __lt__(self,other):
         if type(self) != type(other):
             return False
-        return self.strands[0] < other.strands[0]
+        for i in range(4):
+            if self.strands[i] != other.strands[i]:
+                return self.strands[i]< other.strands[i]
+        return False
     def __getitem__(self, item):
         return self.strands[item%4]
 
