@@ -4,10 +4,10 @@ from time import time
 
 class NodeKnot:
 
-    def __init__(self,knot:CustomKnot,mov:list[str]=[]):
+    def __init__(self,knot:CustomKnot,mov:List[str]=[]):
         self.knot = knot
         self.mov = mov
-        self.similarity: float| None = None
+        self.difference: float| None = None
 
     def successorsRotates(self):
         #print("rotations")
@@ -24,6 +24,12 @@ class NodeKnot:
     def successorsICreate(self, maxStrands: int, n : int = None):
         if n == None:
             n = self.knot.numberOfStrands
+        if n == 0:
+            knotCopy = deepcopy(self.knot)
+            knotCopy.createALoop(0,0)
+            movCopy = deepcopy(self.mov)
+            movCopy.append("createALoop({},{})".format(0,0))
+            yield NodeKnot(knotCopy,movCopy)
         if n<maxStrands:
             for i in range(1,n+1):
                 for orientation in range(4):
@@ -125,13 +131,13 @@ class NodeKnot:
                 yield node
         
     def successorsList(self, maxStrands: int):
-        list:list[NodeKnot] = []
+        list:List[NodeKnot] = []
         for node in self.successors(maxStrands):
             list.append(node)
         return list
 
     def successorsListFiltered(self, maxStrands: int):
-        list:list[NodeKnot] = []
+        list:List[NodeKnot] = []
         for node in self.successorsFiltered(maxStrands):
             list.append(node)
         return list
@@ -153,23 +159,23 @@ class NodeKnot:
     
     @property
     def priority(self)->float:
-        if self.similarity == None:
-            raise Exception("Todavía no puedes calcular la prioridad. Este nodo no tiene similarity")
-        return self.similarity + len(self.mov)#/10 
+        if self.difference == None:
+            raise Exception("Todavía no puedes calcular la prioridad. Este nodo no tiene diferencia")
+        return self.difference + len(self.mov)#/10 
 
 class PriorityQueueNodeKnot:
     """A queue of NodeKnot with priorities, Node can be inserted with .put(priority,node) and extracted with .get()"""
     def __init__(self):
-        self.queue: dict[str,tuple[float,NodeKnot]] = {}
+        self.queue: Dict[str,Tuple[float,NodeKnot]] = {}
 
-    def priorities(self)->list[float]:
+    def priorities(self)->List[float]:
         """Returns a list with the priorities."""
         return [priority for priority,_ in self.queue.values()]
 
-    def nodes(self)->list[NodeKnot]:
+    def nodes(self)->List[NodeKnot]:
         return [node for _,node in self.queue.values()]
 
-    def keys(self)->list[CustomKnot]:
+    def keys(self)->List[CustomKnot]:
         """Returns a list with the elements."""
         return [key for key in self.queue.keys()]
 
@@ -220,21 +226,21 @@ class PriorityQueueNodeKnot:
         self.queue.pop(node.knot.representationForHash)
         return node
 
-    def updateSimilarities(self, newObjetive: CustomKnot, cache: SimilarityCache = None, type: int = 1):
+    def updateDifferences(self, newObjetive: CustomKnot, cache: DifferenceCache = None, type: int = 1):
         if cache == None:
             for node in self.nodes():
                 if type==1:
-                    newSimilarity = similarity(node.knot,newObjetive)
+                    newDifference = difference(node.knot,newObjetive)
                 else:
-                    newSimilarity = similarity(newObjetive,node.knot)
-                node.similarity = newSimilarity
+                    newDifference = difference(newObjetive,node.knot)
+                node.difference = newDifference
         else:
             for node in self.nodes():
                 if type==1:
-                    newSimilarity = cache.similarity(node.knot,newObjetive)
+                    newDifference = cache.difference(node.knot,newObjetive)
                 else:
-                    newSimilarity = cache.similarity(newObjetive,node.knot)
-                node.similarity = newSimilarity
+                    newDifference = cache.difference(newObjetive,node.knot)
+                node.difference = newDifference
 
     @property
     def empty(self):
@@ -254,18 +260,18 @@ class PriorityQueueNodeKnot:
                 return True
         return False
 
-def similarity(knot1: CustomKnot, knot2: CustomKnot):
+def difference(knot1: CustomKnot, knot2: CustomKnot):
     n1 = knot1.numberOfStrands
     n2 = knot2.numberOfStrands
-    auxes:list[float] = []
+    auxes:List[float] = []
     for rotation in knot1.allRotationYield():
         aux = 0
         for s in range(max(n1,n2)):
-            aux += similarityOfStrand(s,rotation,knot2,n1=n1,n2=n2)
+            aux += differenceOfStrand(s,rotation,knot2,n1=n1,n2=n2)
         auxes.append(aux)
     return min(auxes)+abs(n1-n2)
 
-def similarityOfStrand(s:Strand, knot1:CustomKnot, knot2: CustomKnot, n1: int| None = None, n2=None):
+def differenceOfStrand(s:Strand, knot1:CustomKnot, knot2: CustomKnot, n1: int| None = None, n2=None):
     if n1 == None: n1 = knot1.numberOfStrands
     if n2 == None: n2 = knot2.numberOfStrands
     if n1 == 0 and n2 == 0:
@@ -296,7 +302,7 @@ def similarityOfStrand(s:Strand, knot1:CustomKnot, knot2: CustomKnot, n1: int| N
     return aux
 
 """
-def similarityOfStrand(strand:int,knot1:CustomKnot,knot2:CustomKnot,n1:int|None = None,n2:int|None = None) ->float:
+def differenceOfStrand(strand:int,knot1:CustomKnot,knot2:CustomKnot,n1:int|None = None,n2:int|None = None) ->float:
     if n1 == None:
         n1 = knot1.numberOfStrands
     if n2 == None:
@@ -336,29 +342,29 @@ def similarityOfStrand(strand:int,knot1:CustomKnot,knot2:CustomKnot,n1:int|None 
     return aux
 
 
-def similarityKnot(knot1:CustomKnot,knot2:CustomKnot):
+def differenceKnot(knot1:CustomKnot,knot2:CustomKnot):
     n1 = knot1.numberOfStrands
     n2 = knot2.numberOfStrands
-    similarities:list[float] = []
+    differences:List[float] = []
     for knot1Rotation in knot1.allRotation():
         aux = abs(n1-n2)
         for nStrand in range(min(n1,n2)):
             strand = mod(nStrand,min(n1,n2))
-            auxSimilarity = similarityOfStrand(strand,knot1Rotation,knot2)
-            aux += auxSimilarity
+            auxDifference = differenceOfStrand(strand,knot1Rotation,knot2)
+            aux += auxDifference
         #aux += len(set(knot1Rotation.crosses).symmetric_difference(set(knot2.crosses)))
-        similarities.append(aux)
-    return min(similarities)
+        differences.append(aux)
+    return min(differences)
 
-def similarity(knot1:CustomKnot,knot2:CustomKnot):
-    return min(similarityKnot(knot1,knot2),similarityKnot(knot2,knot1))
+def difference(knot1:CustomKnot,knot2:CustomKnot):
+    return min(differenceKnot(knot1,knot2),differenceKnot(knot2,knot1))
 """
 
-class Similarity:
+class DifferenceSimpleCache:
     def __init__(self,objetiveKnot:CustomKnot, times=False):
         self.times = times
         self.objetiveKnot = objetiveKnot
-        self.similarities:dict[str,float] = {}
+        self.differences:Dict[str,float] = {}
         self._calls = 0
 
     def __getitem__(self, knot:CustomKnot | str):
@@ -370,27 +376,27 @@ class Similarity:
             knotReprese: str = knot
         else:
             raise Exception("Incorrect Type")
-        if knotReprese in self.similarities.keys():
-            tupleSimilarity = self.similarities[knotReprese]
-            if self.times: print("Time Similarity sin calculo",time() - start)  
-            return tupleSimilarity
+        if knotReprese in self.differences.keys():
+            tupleDifference = self.differences[knotReprese]
+            if self.times: print("Time Difference sin calculo",time() - start)  
+            return tupleDifference
         else:
-            tupleSimilarity = similarity(knot,self.objetiveKnot)
-            self.similarities[knotReprese] = tupleSimilarity
-            if self.times: print("Time Similarity con calculo",time() - start)   
-            return tupleSimilarity
+            tupleDifference = difference(knot,self.objetiveKnot)
+            self.differences[knotReprese] = tupleDifference
+            if self.times: print("Time Difference con calculo",time() - start)   
+            return tupleDifference
     
     def __len__(self):
-        return len(self.similarities)
+        return len(self.differences)
 
-class SimilarityCache:
+class DifferenceCache:
     def __init__(self):
-        self.cache: dict[str,dict[str,float]] = dict()
+        self.cache: Dict[str,Dict[str,float]] = dict()
         self._len = 0
         self._calls = 0
-    def similarity(self,knot1: CustomKnot, knot2: CustomKnot,type:int=1):
+    def difference(self,knot1: CustomKnot, knot2: CustomKnot,type:int=1):
         if type == 2:
-            return self.similarity(knot2,knot1)
+            return self.difference(knot2,knot1)
         self._calls+=1
         representation1 = knot1.representationForHash
         representation2 = knot2.representationForHash
@@ -399,12 +405,12 @@ class SimilarityCache:
             if representation2 in dict1:
                 return dict1[representation2]
             else:
-                s = similarity(knot1,knot2)
+                s = difference(knot1,knot2)
                 dict1[representation2] = s
                 self._len += 1
                 return s
         else:
-            s = similarity(knot1,knot2)
+            s = difference(knot1,knot2)
             self.cache[representation1] = dict()
             self.cache[representation1][representation2] = s
             self._len += 1
@@ -418,14 +424,14 @@ def areSameKnotsAStar(knot1:CustomKnot,knot2:CustomKnot,maxStrands:int = None, d
     if maxStrands == None:
         maxStrands = knot1.numberOfStrands + knot2.numberOfStrands
     initialNode = NodeKnot(deepcopy(knot1))
-    initialNode.similarity = similarity(knot1,knot2)
+    initialNode.difference = difference(knot1,knot2)
     queue = PriorityQueueNodeKnot()
     queue.put(initialNode)
     visited = sset()
     startTime = time()
     while not queue.empty:
         node = queue.get()
-        if debug>0 :print("queue len:",queue.len,"   visited len",len(visited),"get node similarity: {:3.2f}, priority: {:3.2f}, numberOfStrands: {}".format(node.similarity,node.priority,node.knot.numberOfStrands)); print("Mov: ", node.mov)
+        if debug>0 :print("queue len:",queue.len,"   visited len",len(visited),"get node difference: {:3.2f}, priority: {:3.2f}, numberOfStrands: {}".format(node.difference,node.priority,node.knot.numberOfStrands)); print("Mov: ", node.mov)
         
         if not visited.add(node.knot.representationForHash):
             if debug>0 : print("Esta en visited")
@@ -446,10 +452,10 @@ def areSameKnotsAStar(knot1:CustomKnot,knot2:CustomKnot,maxStrands:int = None, d
             
             if times>1: print("Time check1",time() - start)
 
-            successor.similarity = similarity(successor.knot,knot2)
+            successor.difference = difference(successor.knot,knot2)
             if times>1: print("Time check2",time() - start)
             if debug>1 :print("{}: {:3.2f}, mov: {}".format(i,successor.priority,successor.mov))
-            if successor.similarity == 0:
+            if successor.difference == 0:
                 queue.put(successor)
                 return True, successor.mov
             if times>1: print("Time check3",time() - start)
@@ -462,24 +468,24 @@ def areSameKnotsAStar2(knot1: CustomKnot, knot2: CustomKnot, maxStrands: int = N
         return True, [""], [""]
     if maxStrands == None:
         maxStrands = knot1.numberOfStrands + knot2.numberOfStrands
-    cache = SimilarityCache()
+    cache = DifferenceCache()
     bestNode1 = NodeKnot(knot1)
     bestNode2 = NodeKnot(knot2)
-    initSimilarity = cache.similarity(bestNode1.knot,bestNode2.knot)
-    bestNode1.similarity = initSimilarity
-    bestNode2.similarity = initSimilarity
+    initDifference = cache.difference(bestNode1.knot,bestNode2.knot)
+    bestNode1.difference = initDifference
+    bestNode2.difference = initDifference
     queue1 = PriorityQueueNodeKnot()
     queue1.put(bestNode1)
     queue2 = PriorityQueueNodeKnot()
     queue2.put(bestNode2)
-    visited1:dict[str,NodeKnot] = dict()
-    visited2:dict[str,NodeKnot] = dict()
+    visited1:Dict[str,NodeKnot] = dict()
+    visited2:Dict[str,NodeKnot] = dict()
     startTime = time()
 
     while not ( queue1.empty or queue2.empty):
         if debug>0:
             print("-----")
-            print("SimilarityCache len {} calls {}".format(len(cache),cache._calls))
+            print("DifferenceCache len {} calls {}".format(len(cache),cache._calls))
             print("len(queue1) = ", queue1.len, "len(visited1) ", len(visited1))
             print("bestNode1 priority {:3.2f}".format(bestNode1.priority), " mov", bestNode1.mov)
             
@@ -494,31 +500,31 @@ def areSameKnotsAStar2(knot1: CustomKnot, knot2: CustomKnot, maxStrands: int = N
         flag = False
         for successor in node1.successors(maxStrands):
             if (time()-startTime)>timeLimit:
-                if cachePrint: print("SimilarityCache len {} calls {}".format(len(cache),cache._calls))
+                if cachePrint: print("DifferenceCache len {} calls {}".format(len(cache),cache._calls))
                 return False,[],[]
             i+=1
             if successor.knot.representationForHash in visited1:
                 if debug>1 :print(i,"ya esta en visited")
                 continue
-            successor.similarity = cache.similarity(successor.knot,bestNode2.knot)
+            successor.difference = cache.difference(successor.knot,bestNode2.knot)
             if debug>1 :print("{}: {:3.2f}, mov: {}".format(i,successor.priority,successor.mov))
-            if successor.similarity == 0:
-                if cachePrint: print("SimilarityCache len {} calls {}".format(len(cache),cache._calls))
+            if successor.difference == 0:
+                if cachePrint: print("DifferenceCache len {} calls {}".format(len(cache),cache._calls))
                 return True, successor.mov, bestNode2.mov
             if successor.knot.representationForHash in visited2:
-                if cachePrint: print("SimilarityCache len {} calls {}".format(len(cache),cache._calls))
+                if cachePrint: print("DifferenceCache len {} calls {}".format(len(cache),cache._calls))
                 return True, successor.mov, visited2[successor.knot.representationForHash].mov
 
             if successor.priority < bestNode1.priority:
                 flag = True
                 if debug>0 :print(i,"Mejora bestNode1")
                 bestNode1 = successor
-                bestNode2.similarity = cache.similarity(bestNode1.knot,bestNode2.knot)
+                bestNode2.difference = cache.difference(bestNode1.knot,bestNode2.knot)
             queue1.put(successor)
 
         if flag:
-            #update queue similarities
-            queue2.updateSimilarities(bestNode1.knot,cache,type=2)
+            #update queue differences
+            queue2.updateDifferences(bestNode1.knot,cache,type=2)
 
         if debug>0:
             print("len(queue2) = ", queue2.len, "len(visited2) ", len(visited2))
@@ -535,19 +541,19 @@ def areSameKnotsAStar2(knot1: CustomKnot, knot2: CustomKnot, maxStrands: int = N
         flag = False
         for successor in node2.successors(maxStrands):
             if (time()-startTime)>timeLimit:
-                if cachePrint: print("SimilarityCache len {} calls {}".format(len(cache),cache._calls))
+                if cachePrint: print("DifferenceCache len {} calls {}".format(len(cache),cache._calls))
                 return False,[],[]
             i+=1
             if successor.knot.representationForHash in visited2:
                 if debug>1 :print(i,"ya esta en visited")
                 continue
-            successor.similarity = cache.similarity(bestNode1.knot,successor.knot)
+            successor.difference = cache.difference(bestNode1.knot,successor.knot)
             if debug>1 :print("{}: {:3.2f}, mov: {}".format(i,successor.priority,successor.mov))
-            if successor.similarity == 0:
-                if cachePrint: print("SimilarityCache len {} calls {}".format(len(cache),cache._calls))
+            if successor.difference == 0:
+                if cachePrint: print("DifferenceCache len {} calls {}".format(len(cache),cache._calls))
                 return True, bestNode1.mov, successor.mov
             if successor.knot.representationForHash in visited1:
-                if cachePrint: print("SimilarityCache len {} calls {}".format(len(cache),cache._calls))
+                if cachePrint: print("DifferenceCache len {} calls {}".format(len(cache),cache._calls))
                 return True, visited1[successor.knot.representationForHash].mov, successor.mov
 
 
@@ -555,11 +561,11 @@ def areSameKnotsAStar2(knot1: CustomKnot, knot2: CustomKnot, maxStrands: int = N
                 flag = True
                 if debug>0 :print(i,"Mejora bestNode2")
                 bestNode2 = successor
-                bestNode1.similarity = similarity(bestNode1.knot,bestNode2.knot)
+                bestNode1.difference = difference(bestNode1.knot,bestNode2.knot)
             queue2.put(successor)
         
         if flag:
-            queue1.updateSimilarities(bestNode2.knot,cache,type=1)
+            queue1.updateDifferences(bestNode2.knot,cache,type=1)
 
 class CustomKnotStar(CustomKnot):
     def randomMov(self, maxStrands: int = 100, debug=False):

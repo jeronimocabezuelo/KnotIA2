@@ -11,11 +11,11 @@ class PriorityQueue(Generic[T]):
     """A queue with priorities, items can be inserted with .put(priority,item) and extracted with .get()"""
     def __init__(self):
         self.queue = {}
-    def priorities(self)->list[int]:
+    def priorities(self)->List[int]:
         """Returns a list with the priorities."""
         return [priority for priority in self.queue.values()]
     #    return [element[0] for element in self.queue]
-    def items(self)->list[T]:
+    def items(self)->List[T]:
         """Returns a list with the elements."""
         return [element for element in self.queue.keys()]#[element[1] for element in self.queue]
     def put(self,priority:int,item:T):
@@ -51,11 +51,11 @@ class PriorityQueue(Generic[T]):
         """It tells us the length of the queue."""
         return len(self.queue)
 
-def distance(index1:Position,index2:Position)->int:
+def distance(index1:Tuple[int,int],index2:Tuple[int,int])->int:
     """Calculates the distance between two indexes. Manhattan distance. l0"""
     return abs(index2[0]-index1[0])+abs(index2[1]-index1[1])
 
-def isCornerOfPath(matrix:np.ndarray,ind:Position):
+def isCornerOfPath(matrix:np.ndarray,ind:Tuple[int,int]):
     """It tells us if an index is a corner of a path."""
     number = matrix[ind]
     for i in range(4):
@@ -66,14 +66,14 @@ def isCornerOfPath(matrix:np.ndarray,ind:Position):
     return False
 
 class Node:
-    def __init__(self,matrix:np.ndarray,origin:Position,destiny:Position,length:int,previousDirection:int|None = None,directionsChanges = 0):
+    def __init__(self,matrix:np.ndarray,origin:Tuple[int,int],destiny:Tuple[int,int],length:int,previousDirection:int|None = None,directionsChanges = 0):
         self.matrix = matrix
         self.origin = origin
         self.destiny = destiny
         self.length = length
         self.previousDirection = previousDirection
         self.directionsChanges = directionsChanges
-    def successors(self,numberToFill:int,numberFree=0)->list[Node]:
+    def successors(self,numberToFill:int,numberFree=0)->List[Node]:
         suc = []
         for i in range(4):
             newOrigin = uDLF(i,self.origin)
@@ -104,7 +104,7 @@ def connect(matrix:np.ndarray,numberO:int,numberD:int,caminoNumber:int|None=None
                 return None,None,None,None
     return None,None,None,None
 
-def connectOrigDest(matrix:np.ndarray,origin:Position,destiny:Position,caminoNumber,numberFree=0,debug=False)->tuple[int,np.ndarray]|tuple[None,None]:
+def connectOrigDest(matrix:np.ndarray,origin:Tuple[int,int],destiny:Tuple[int,int],caminoNumber,numberFree=0,debug=False)->Tuple[int,np.ndarray]|Tuple[None,None]:
     """Returns an array connecting origin and destiny and the length of the path."""
     if origin == destiny:
         return 0,matrix
@@ -156,12 +156,12 @@ def connectable(matrix:np.ndarray,numberO:int,numberD:int)->bool:
     m = connectMatrix(matrix,numberO,numberD)
     return type(m)!=type(None)
 
-def connectableOrigDest(matrix:np.ndarray,origin:Position,destiny:Position,numberFree=0)->tuple[bool,int|None]:
+def connectableOrigDest(matrix:np.ndarray,origin:Tuple[int,int],destiny:Tuple[int,int],numberFree=0)->Tuple[bool,int|None]:
     """It tells us if it is possible to connect origin and destiny."""
     l,m = connectOrigDest(matrix,origin,destiny,matrix[origin],numberFree)
     return type(m)!=type(None),l
 
-def connected(pd:PlanarDiagram,strand:Strand):
+def connected(pd:np.ndarray,strand:Strand):
     capes = [ind for ind in indicesOfNumberInMatrix(pd,strand) if isCapeOfCross(pd,ind) != -1]
     if len(capes)!=2:
         return False, None

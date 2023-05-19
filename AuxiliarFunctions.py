@@ -1,11 +1,18 @@
 from ast import Str
 import numpy as np
-from copy import copy
-from typing import TypeVar
+from copy import copy, deepcopy
+from typing import Dict , List, Tuple, TypeVar
 
-Coordinate = int
-Position = tuple[Coordinate,Coordinate]
-PlanarDiagram = np.ndarray
+#int = int
+#Tuple[int,int] = Tuple[int,int]
+#np.ndarray = np.ndarray
+
+from datetime import datetime
+def logTime()->str:
+    return datetime.now().strftime("%H:%M:%S")
+
+def printLog(*values):
+    print(logTime(),*values)
 
 def mod(a:int,n:int)->int:
     """Like % but between 1 and n"""
@@ -20,15 +27,15 @@ def remap(oldValue,oldMin,oldMax,newMin,newMax):
     newValue = (((oldValue - oldMin) * newRange) / oldRange) + newMin
     return newValue
 
-def borderByZeros(matrix:np.ndarray)->np.ndarray:
+def borderByZeros(matrix:np.ndarray, checks = True)->np.ndarray:
     """Borders a matrix with zeros."""
-    if not np.array_equal(matrix[0,:] , np.zeros(matrix.shape[1])):
+    if not checks or not np.array_equal(matrix[0,:] , np.zeros(matrix.shape[1])):
         matrix = np.insert(matrix,0,0,axis=0)
-    if not np.array_equal(matrix[-1,:], np.zeros(matrix.shape[1])):
+    if not checks or not np.array_equal(matrix[-1,:], np.zeros(matrix.shape[1])):
         matrix = np.insert(matrix,matrix.shape[0],0,axis=0)
-    if not np.array_equal(matrix[:,0] , np.zeros(matrix.shape[0])):
+    if not checks or not np.array_equal(matrix[:,0] , np.zeros(matrix.shape[0])):
         matrix = np.insert(matrix,0,0,axis=1)
-    if not np.array_equal(matrix[:,-1], np.zeros(matrix.shape[0])):
+    if not checks or not np.array_equal(matrix[:,-1], np.zeros(matrix.shape[0])):
         matrix = np.insert(matrix,matrix.shape[1],0,axis=1)
     return matrix
 
@@ -49,23 +56,27 @@ def removeBorderOfZeros(matrix:np.ndarray):
             continue
         return matrix
 
-def exists(index:Position,matrix:np.ndarray):
+def exists(index:Tuple[int,int],matrix:np.ndarray):
     """Tells us if an index is valid for a matrix."""
     return index[0]>-1 and index[1]>-1 and index[0]< matrix.shape[0] and index[1]< matrix.shape[1]
 
-def up(ind:Position)->Position:
+def exists3D(index: Tuple[int,int,int], matrix: np.ndarray):
+    """Tells us if an index is valid for a 3Dmatrix."""
+    return index[0]>-1 and index[1]>-1 and index[2]>-1 and index[0]< matrix.shape[0] and index[1]< matrix.shape[1] and index[2]< matrix.shape[2]
+
+def up(ind:Tuple[int,int])->Tuple[int,int]:
     return(ind[0]-1,ind[1])
 
-def down(ind:Position)->Position:
+def down(ind:Tuple[int,int])->Tuple[int,int]:
     return(ind[0]+1,ind[1])
 
-def left(ind:Position)->Position:
+def left(ind:Tuple[int,int])->Tuple[int,int]:
     return(ind[0],ind[1]-1)
 
-def right(ind:Position)->Position:
+def right(ind:Tuple[int,int])->Tuple[int,int]:
     return(ind[0],ind[1]+1)
 
-def uDLF(i:int,ind:Position)->Position:
+def uDLF(i:int,ind:Tuple[int,int])->Tuple[int,int]:
     """Returns the index to the above, left, below, or right of another."""
     if i%4 == 0:
         return up(ind)
@@ -76,9 +87,13 @@ def uDLF(i:int,ind:Position)->Position:
     else :
         return left(ind)
 
-def indicesOfNumberInMatrix(matrix:np.ndarray,number:int)->list[Position]:
+def indicesOfNumberInMatrix(matrix:np.ndarray,number:int)->List[Tuple[int,int]]:
     """It gives us all the index of a matrix that has the number."""
     return [(indice[0],indice[1]) for indice in np.argwhere(matrix==number)]
+
+def indicesOfNumberIn3DMatrix(matrix:np.ndarray,number:int)->List[Tuple[int,int,int]]:
+    """It gives us all the index of a 3Dmatrix that has the number."""
+    return [(indice[0],indice[1], indice[2]) for indice in np.argwhere(matrix==number)]
 
 def concat(matrix1:np.ndarray,matrix2:np.ndarray,axis=1)->np.ndarray:
     """Does the same as numpy's concatenate function but for two arrays and also works if one of the arrays has shape (0,0)"""
@@ -100,7 +115,13 @@ def contains(matrix:np.ndarray,element):
 
 def replace(matrix:np.ndarray,oldNumber,newNumber)->np.ndarray:
     """Replaces all occurrences of one value with another in an array."""
-    return np.where(matrix==oldNumber, newNumber, matrix)
+    if type(oldNumber) == type(0):
+        return np.where(matrix==oldNumber, newNumber, matrix)
+    if type(oldNumber) == type([1]):
+        matrixCopy = deepcopy(matrix)
+        for number in oldNumber:
+            matrix = np.where(matrixCopy == number, newNumber, matrix)
+        return matrix
 
 def createGaps(matrix:np.ndarray)->np.ndarray:
     """Separate the strands so that more paths enter."""
@@ -146,10 +167,10 @@ def createGaps(matrix:np.ndarray)->np.ndarray:
 
 
 #TODO: Hacer mas corto eso con UDLF
-def walkWithDirection(matrix:np.ndarray,org:Position,des:Position,dir:int):
+def walkWithDirection(matrix:np.ndarray,org:Tuple[int,int],des:Tuple[int,int],dir:int):
     """Walk a path of -9 following the direction"""
     prevDirection = None
-    visited:list[Position]=[]
+    visited:List[Tuple[int,int]]=[]
     while org != des:
         visited.append(org)
         if not up(org) in visited:
@@ -202,9 +223,7 @@ def findSubMatrix3x3In(matrix:np.ndarray,subMatrix3x3:np.ndarray):
             return center
     return None
   
-
-
-def removeUnnecessaryRow(pd:PlanarDiagram)->PlanarDiagram:
+def removeUnnecessaryRow(pd:np.ndarray)->np.ndarray:
     """Delete unnecessary rows in a planar diagram."""
     for row in reversed(range(pd.shape[0])):
         toRemove = True
@@ -221,7 +240,7 @@ def removeUnnecessaryRow(pd:PlanarDiagram)->PlanarDiagram:
             pd = np.delete(pd,row,axis=0)
     return pd
 
-def removeUnnecessaryColumn(pd:PlanarDiagram)->PlanarDiagram:
+def removeUnnecessaryColumn(pd:np.ndarray)->np.ndarray:
     """Delete unnecessary Column in a planar diagram."""
     for c in reversed(range(pd.shape[1])):
         toRemove = True
@@ -240,7 +259,7 @@ def removeUnnecessaryColumn(pd:PlanarDiagram)->PlanarDiagram:
             pd = np.delete(pd,c,axis=1)
     return pd
 
-def isCapeOfCross(pd:PlanarDiagram,ind:Position):
+def isCapeOfCross(pd:np.ndarray,ind:Tuple[int,int]):
     for i in range(4):
         if exists(uDLF(i,ind),pd) and pd[uDLF(i,ind)]<0:
             return i
@@ -267,3 +286,23 @@ class sset(set):
         prev_len = len(self)
         super().add(__element) # O(N log N) lookup
         return len(self) != prev_len
+
+def normalizeImage(image,newShape):
+    #Vertical:
+    image = normalizeImageDirection(image,newShape[0],vertical=0)
+    image = normalizeImageDirection(image,newShape[1],vertical=1)
+    return image
+
+def normalizeImageDirection(image,newShape,vertical = 0, direction = 0):
+    if image.shape[vertical] >= newShape: return image
+    obj = 0 if direction else image.shape[vertical]
+    image = np.insert(image,obj,0,axis=vertical)
+    return normalizeImageDirection(image,newShape,vertical=vertical,direction=(direction+1)%2)
+
+def addLayerToMatrix(matrix, axis, aheadOrBehind ,value = 0):
+    layer = np.repeat(value*np.ones(matrix.shape[0],dtype=matrix.dtype)[:,None,None], matrix.shape[axis],axis=axis)
+    axis = 1 if axis==2 else 2
+    if aheadOrBehind:
+        return np.concatenate((layer,matrix),axis=axis)
+    else:
+        return np.concatenate((matrix,layer),axis=axis)

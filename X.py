@@ -59,11 +59,11 @@ def zonesConnectCross(cross:X,planarDiagram,pZones):
         return None
     return [pZones[up(left(ind))],pZones[up(right(ind))],pZones[down(left(ind))],pZones[down(right(ind))]]
 
-def commonZone(xs:list[X],planarDiagram,planarZones):
+def commonZone(xs:List[X],planarDiagram,planarZones):
     zs = [zonesConnectCross(x,planarDiagram,planarZones) for x in xs]
     return list(set(zs[0]).intersection(*zs[1:]).difference([1]))
 
-def findCrossInPd(cross:X,planarDiagram:PlanarDiagram):
+def findCrossInPd(cross:X,planarDiagram:np.ndarray):
     """Find a cross on a planar diagram."""
     for i in range(4):
         subMatrixX = np.array([[0,cross.strands[(i+3)%4],0],
@@ -74,7 +74,7 @@ def findCrossInPd(cross:X,planarDiagram:PlanarDiagram):
             return ind
     return None
 
-def removeCrossOfPD(pd:PlanarDiagram,cross:X):
+def removeCrossOfPD(pd:np.ndarray,cross:X):
     ind = findCrossInPd(cross,pd)
     if ind != None:
         pd[ind] = 0

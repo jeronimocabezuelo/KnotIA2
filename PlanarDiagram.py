@@ -6,12 +6,12 @@ from AuxiliarFunctions import *
 from Path import *
 from X import *
 
-def directionOfStrandWhenAdd(matrix:PlanarDiagram,ind:Position):
+def directionOfStrandWhenAdd(matrix:np.ndarray,ind:Tuple[int,int]):
     for i in range(4):
         if exists(uDLF(i,ind),matrix) and matrix[uDLF(i,ind)]<0:
             return (i+2)%4
 
-def addThreeRowOrColumn(matrix:PlanarDiagram,d:int,ind:Position)->tuple[PlanarDiagram,Position]:
+def addThreeRowOrColumn(matrix:np.ndarray,d:int,ind:Tuple[int,int])->Tuple[np.ndarray,Tuple[int,int]]:
     if d%4==0:
         return np.append(np.zeros((3,matrix.shape[1]),dtype=int),matrix,axis=0),(ind[0]+3,ind[1])
     elif d%4==1:
@@ -21,13 +21,13 @@ def addThreeRowOrColumn(matrix:PlanarDiagram,d:int,ind:Position)->tuple[PlanarDi
     else:
         return np.append(np.zeros((matrix.shape[0],3),dtype=int),matrix,axis=1),(ind[0],ind[1]+3)
 
-def indicesNeedFree(ind:Position,d:int):
+def indicesNeedFree(ind:Tuple[int,int],d:int):
     aux = [uDLF(d,ind),uDLF(d,uDLF(d,ind)),uDLF(d,uDLF(d,uDLF(d,ind)))]
     aux1 = [uDLF(d+1,indAux) for indAux in aux]
     aux2 = [uDLF(d-1,indAux) for indAux in aux]
     return aux+aux1+aux2
 
-def insertThreeRowOrColumn(matrix:PlanarDiagram,d:int,ind:Position):
+def insertThreeRowOrColumn(matrix:np.ndarray,d:int,ind:Tuple[int,int]):
     unconnectedStrand = set([matrix[auxInd] for auxInd in indicesNeedFree(ind,d) if matrix[auxInd]>0])
     if d==0:
         matrix = insert(matrix,ind[0],0,3,axis=0)
@@ -63,19 +63,19 @@ def insertThreeRowOrColumn(matrix:PlanarDiagram,d:int,ind:Position):
 
     return matrix,ind,unconnectedStrand      
 
-def indicesOfCross(ind:Position,d:int):
+def indicesOfCross(ind:Tuple[int,int],d:int):
     return  [uDLF(d,ind),
              uDLF(d,uDLF(d+1,uDLF(d,ind))),
              uDLF(d-1,uDLF(d,uDLF(d,uDLF(d+1,uDLF(d,ind))))),
              uDLF(d-2,uDLF(d-1,uDLF(d-1,uDLF(d,uDLF(d,uDLF(d+1,uDLF(d,ind)))))))]
 
-def indicesFreeBeforeAdd(ind:Position,d:int):
+def indicesFreeBeforeAdd(ind:Tuple[int,int],d:int):
     return [uDLF(d+1,uDLF(d,ind)),
             uDLF(d-1,uDLF(d,ind)),
             uDLF(d+1,uDLF(d,uDLF(d,uDLF(d,ind)))),
             uDLF(d-1,uDLF(d,uDLF(d,uDLF(d,ind))))]
 
-def addCrossToMatrix(matrix:PlanarDiagram,cross:X,ind:Position):
+def addCrossToMatrix(matrix:np.ndarray,cross:X,ind:Tuple[int,int]):
     #print("     addCrossToMatrix:",cross)
     partsUnconnected = set()
     d = directionOfStrandWhenAdd(matrix,ind)
@@ -101,12 +101,12 @@ def addCrossToMatrix(matrix:PlanarDiagram,cross:X,ind:Position):
     return matrix,list(partsUnconnected)
 
 class NodePD:
-    def __init__(self,pd:PlanarDiagram,unconnectedStrands:list[Strand],remainCross:list[X],lengths:dict[Strand,int]):
-        self.pd:PlanarDiagram = borderByZeros(pd)
+    def __init__(self,pd:np.ndarray,unconnectedStrands:List[Strand],remainCross:List[X],lengths:Dict[Strand,int]):
+        self.pd:np.ndarray = borderByZeros(pd)
         self.unconnectedStrands = unconnectedStrands
         self.lengths = lengths
         self.remainCross = remainCross
-    def successors(self,debug=False)->list[NodePD]:
+    def successors(self,debug=False)->List[NodePD]:
         if debug:
             print("-------")
             print("Padre:")
@@ -156,7 +156,7 @@ class NodePD:
     def length(self):
         return sum(self.lengths.values())
 
-def reconnect(pd:PlanarDiagram,strand:Strand):
+def reconnect(pd:np.ndarray,strand:Strand):
     """Delete the path from the strand, and reconnect it."""
     indices = indicesOfNumberInMatrix(pd,strand)
     for ind in indices:
@@ -164,7 +164,7 @@ def reconnect(pd:PlanarDiagram,strand:Strand):
             pd[ind] = 0
     return connectMatrixLength(pd,strand,strand)
 
-def compactPlanarDiagram(pd:PlanarDiagram,lengths:dict[Strand,int],debug=False):
+def compactPlanarDiagram(pd:np.ndarray,lengths:Dict[Strand,int],debug=False):
     if debug:
         print("compactPlanarDiagram")
         print(lengths)

@@ -21,17 +21,18 @@ class StrandType(Enum):
     BELOW = 2
 
 class CustomKnot:
-    def __init__(self,xs:list[X]):
+    def __init__(self,xs:List[X]):
         """A knot is a mathematical object, with this class we try to model it."""
         if type(xs) == type([]):
-            self.crosses:list[X] = sorted(xs)
+            self.crosses:List[X] = sorted(xs)
         elif type(xs) == str:
-            self.crosses:list[X] = sorted(eval(xs))
+            self.crosses:List[X] = sorted(eval(xs))
         else:
             raise Exception("Incorrect type")
         self.pd = None
         self.pdz = None
         self._reprForHash = None
+        self._image = None
         self.isKnotValid()
 
     def __repr__(self):
@@ -65,7 +66,7 @@ class CustomKnot:
             uno.inverse(n=n)
         return False
 
-    def __contains__(self,key:X|list[X]):
+    def __contains__(self,key:X|List[X]):
         if type(key) == type(X(0,0,0,0)):
             n = self.numberOfStrands
             cross = X(mod(key.strands[0],n),mod(key.strands[1],n),mod(key.strands[2],n),mod(key.strands[3],n))
@@ -91,7 +92,7 @@ class CustomKnot:
                 uno.rotate(n=n)
             uno.inverse(n=n)
 
-    def allRotation(self)->list[CustomKnot]:
+    def allRotation(self)->List[CustomKnot]:
         aux=[]
         n = self.numberOfStrands
         uno = deepcopy(self)
@@ -132,6 +133,8 @@ class CustomKnot:
         for c in counts:
             if c!=2:
                 print(self.crosses)
+                print(unique)
+                print(counts)
                 raise Exception("Knot bad generated. Number of strands.")
         if not all(unique == range(1,2*len(self.crosses)+1)):
             raise Exception("Knot bad generated. Strands concordance.")
@@ -162,7 +165,7 @@ class CustomKnot:
 
     def sortedCrossesForCodeDowkerThistlethwaite(self):
         n = self.numberOfStrands
-        crossesSort:list[X] = []
+        crossesSort:List[X] = []
         for l in range(1,n+1):
             crossesWithS = crossesWithStrand(self,l)
             for cross in crossesWithS: 
@@ -197,11 +200,11 @@ class CustomKnot:
         arrayAux = [l2 for (l1,l2) in arrayAux]
         return arrayAux
 
-    def strandsConnectedWith(self,strand: Strand,clockWise:bool)->list[tuple[Strand,bool]]:
+    def strandsConnectedWith(self,strand: Strand,clockWise:bool)->List[Tuple[Strand,bool]]:
         n = self.numberOfStrands
         if strand<1 or strand > n:
             raise Exception("Invalid strand")
-        auxList:list[tuple[Strand,bool]] =[(strand,True)]
+        auxList:List[Tuple[Strand,bool]] =[(strand,True)]
         while True:
             previousStrand,previousDirection = auxList[-1]
             cross, i = crossWithStrandAndDirection(self,previousStrand,previousDirection)
@@ -213,7 +216,7 @@ class CustomKnot:
             auxList.append((nextStrand,nextDirection))
         return auxList
 
-    def hasLoopInStrandsConnected(self,strandsConnected:list[Strand])->bool:
+    def hasLoopInStrandsConnected(self,strandsConnected:List[Strand])->bool:
         n = len(strandsConnected)
         for i in range(n):
             l  = strandsConnected[i]
@@ -239,8 +242,9 @@ class CustomKnot:
             return None
             
 
-    def planarDiagrams(self)->PlanarDiagram:
+    def planarDiagrams(self)->np.ndarray:
         """It returns us a matrix that is the planar representation of the knot."""
+        self._image = None
         crossesCopy = self.crosses.copy()
         if len(crossesCopy) == 0:#Estamos ante un no-nudo sin cruces
             return np.array([[1,1,1],[1,0,1],[1,1,1]],dtype=int)
@@ -268,6 +272,8 @@ class CustomKnot:
 
     def image(self):
         """Returns an image of the planar representation."""
+        if type(self._image) != type(None):
+            return self._image
         matrix = self.planarDiagrams()
         matrix = borderByZeros(matrix)
         image = np.zeros((0,0),dtype=float)
@@ -301,12 +307,14 @@ class CustomKnot:
                     else:
                         imageRow = concat(imageRow,blank,axis=1)
             image = concat(image,imageRow,axis=0)
-        return image
+        self._image = image
+        return self.image()
     
     def createALoop(self,l,typ,recalculatePd = False):
         """Create a loop of Reidemeister's first move."""
         if len(self.crosses) == 0:
             self.pd = None
+            self._image = None
             self._reprForHash = None
             self.crosses.append(X(1,2,2,1))
         else:
@@ -319,6 +327,7 @@ class CustomKnot:
                             X(2,2,3,1), X(2,1,3,2), X(1,2,2,3), X(1,3,2,2), X(3,4,4,1)]
                 self.crosses = [auxCross[typ%4 + (l%2)*5],auxCross[4 + (l%2)*5]]
                 self.pd = None
+                self._image = None
             else:
                 for i in range(len(self.crosses)):
                     strandsCrossCopy = copy(self.crosses[i].strands)
@@ -352,9 +361,11 @@ class CustomKnot:
             self.planarDiagrams()
         else:
             self.pd = None
+
         self.isKnotValid()
         self.pdz = None
         self._reprForHash = None
+        self._image = None
     
     def isPosibleUndoALoop(self,cross: X|Strand):
         """It tells us if it is possible to unLoop Reidemeister's first move on a cross."""
@@ -433,6 +444,7 @@ class CustomKnot:
                 self.pd = None
             self.pdz = None
             self._reprForHash = None
+            self._image = None
             self.isKnotValid()
             return True
         return False
@@ -530,6 +542,7 @@ class CustomKnot:
                 self.pd = None
                 self.pdz = None
                 self._reprForHash = None
+                self._image = None
                 return True
             else:
                 if debug:
@@ -625,6 +638,7 @@ class CustomKnot:
                 self.pd = None
             self.pdz = None
             self._reprForHash = None
+            self._image = None
             return True
         else:
             if debug:
@@ -723,9 +737,10 @@ class CustomKnot:
             self.pd = None
         self.pdz = None
         self._reprForHash = None
+        self._image = None
         return True
 
-    def isPosibleReidemeisterIII(self,s1:Strand,s2:Strand,s3:Strand):
+    def auxIsPosibleReidemeisterIII(self,s1:Strand,s2:Strand,s3:Strand):
         n = self.numberOfStrands
         if s1 == mod(s2+1,n) or s1 == mod(s2-1,n) or s1 == mod(s3+1,n) or s1 == mod(s3-1,n) or s3 == mod(s2+1,n) or s3 == mod(s2-1,n):
             return False, None, None, None
@@ -748,46 +763,10 @@ class CustomKnot:
             return True, strandBelow, strandMiddle, strandAbove
         return False, None, None, None
 
-    def isPosibleReidemeisterIII2(self,s1:Strand,s2:Strand,s3:Strand):
-        """It tells us whether it is possible to make a Reidemeister move of the third type. It will return a bool and the strands Below, Middle and Above."""
-        crosses = set()
-        for strand in [s1,s2,s3]:
-            for cross in crossesWithStrand(self,strand):
-                crosses.add(cross)
-        crosses = list(crosses)
-        if len(crosses)!= 3:
-            return False, None, None, None
-        pd = self.planarDiagrams()
-        pd = borderByZeros(pd)
-        pd = createGaps(pd)
-        pZ = self.planarDiagramZones()
-        cZ = commonZone(crosses,pd,pZ)
-        if len(cZ) != 1:
-            return False,None,None,None
-        crossesWZ = crossesWithZone(self,pd,pZ,cZ[0])
-        if len(crossesWZ)!=3:
-            return False, None, None, None
-        strandBelow = None #Debajo
-        strandMiddle = None #Medio
-        strandAbove = None #Encima
-        for strand in [s1,s2,s3]:
-            crosses = crossesWithStrand(self,strand)
-            if len(crosses) != 2:
-                return False, None, None, None
-            if crosses[0].isStrandAbove(strand) and crosses[1].isStrandAbove(strand):
-                strandAbove = strand
-            elif not crosses[0].isStrandAbove(strand) and not crosses[1].isStrandAbove(strand):
-                strandBelow = strand
-            elif (crosses[0].isStrandAbove(strand) and  not crosses[1].isStrandAbove(strand)) or (not crosses[0].isStrandAbove(strand) and  crosses[1].isStrandAbove(strand)):
-                strandMiddle = strand
-        if strandBelow == None or strandMiddle == None or strandAbove == None:
-            return False, None, None, None
-        return True, strandBelow, strandMiddle, strandAbove
-
-    def reidemeisterIII(self,s1:Strand,s2:Strand,s3:Strand,recalculatePd=False,debug=False,check=True):
+    def reidemeisterIII2(self,s1:Strand,s2:Strand,s3:Strand,recalculatePd=False,debug=False,check=True):
         """It makes a Reidemeister move of the third type."""
         if check:
-            posible,B,M,A = self.isPosibleReidemeisterIII(s1,s2,s3)
+            posible,B,M,A = self.auxIsPosibleReidemeisterIII(s1,s2,s3)
             if not posible:
                 if debug:
                     print("no es posible hacer este movimiento")
@@ -828,21 +807,80 @@ class CustomKnot:
                     self.pd = None
                 self.pdz = None
                 self._reprForHash = None
+                self._image = None
                 return True
         return False
+    
+    def isPosibleReidemeisterIII(self,s1:Strand,s2:Strand,s3:Strand,recalculatePd=False,debug=False,check=True):
+       
+        if check:
+            posible,B,M,A = self.auxIsPosibleReidemeisterIII(s1,s2,s3)
+            if not posible:
+                if debug:
+                    print("no es posible hacer este movimiento")
+                return False, None, None, None
+        else:
+            B,M,A = s1,s2,s3
+        n = self.numberOfStrands
+        xsPrueba = {}
+        i = 0
+        for s1 in [-1,+1]:
+            for s2 in [-1,+1]:
+                for s3 in [-1,+1]:
+                    i+=1
+                    xsPrueba[i] = [X(B,A,mod(B+s1,n),mod(A+s2,n)),X(B,mod(M+s3,n),mod(B-s1,n),M),X(M,mod(A-s2,n),mod(M-s3,n),A)]
+                    xsPrueba[i+10] = [X(M,A,mod(M+s1,n),mod(A+s2,n)),X(B,M,mod(B+s3,n),mod(M-s1,n)),X(B,mod(A-s2,n),mod(B-s3,n),A)]
 
-    def reduceUnnecessaryMov(self):
+        for key, xs in xsPrueba.items():
+            if xs in self:
+                if len(set(xs))!=3:
+                    continue
+                return True, key, xs, xsPrueba
+                
+        return False, None, None, None
+    
+    def reidemeisterIII(self,s1:Strand,s2:Strand,s3:Strand,recalculatePd=False,debug=False,check=True):
+        """It makes a Reidemeister move of the third type."""
+        isPosible, key, xs, xsPrueba = self.isPosibleReidemeisterIII(s1,s2,s3,recalculatePd, debug,check)
+        if not isPosible:
+            return False
+        self.crosses = [cross for cross in self.crosses if cross not in xs]
+        associatedKey = 9-key if key<10 else 29-key
+        self.crosses += xsPrueba[associatedKey]
+        self.isKnotValid()
+        if recalculatePd:
+            for x in xs:
+                self.pd = removeCrossOfPD(self.pd,x)
+            for l in [B,A,M]:
+                for ind in indicesOfNumberInMatrix(self.pd,l):
+                    self.pd[ind] = 0
+            for l in set([mod(B+1,n),mod(B-1,n),mod(M+1,n),mod(M-1,n),mod(A+1,n),mod(A-1,n)]):
+                for ind in indicesOfNumberInMatrix(self.pd,l):
+                    cape = isCapeOfCross(self.pd,ind)
+                    if cape == -1:
+                        self.pd[ind] = 0
+            self.planarDiagrams()
+        else:
+            self.pd = None
+        self.pdz = None
+        self._reprForHash = None
+        self._image = None
+        return True
+
+    def reduceUnnecessaryMov(self,debug = False):
         while True:
             continueWhile = False
             n = self.numberOfStrands
             for i in range(1,n+1):
                 if self.undoALoop(i):
+                    if debug: print("undoALoop({})".format(i))
                     continueWhile = True
                     break
             if continueWhile: continue
             possibilities = [(l1,l2) for l1 in range(1,n+1) for l2 in range(l1,n+1) if (self.typeOfStrand(l1) == StrandType.ABOVE and self.typeOfStrand(l2) == StrandType.BELOW) or (self.typeOfStrand(l1) == StrandType.BELOW and self.typeOfStrand(l2) == StrandType.ABOVE)]
             for (l1,l2) in possibilities:
                 if self.undoReidemeisterII(l1,l2):
+                    if debug: print(".undoReidemeisterII({},{})".format(l1,l2))
                     continueWhile = True
                     break
             if continueWhile: continue
@@ -879,49 +917,51 @@ class CustomKnot:
         self.pdz = pd
         return self.planarDiagramZones()
 
-    def randomMov(self,maxStrands:int = 100,debug=False) -> Tuple[bool,str|None]:
-        typeMov = randrange(1,4)
-        if debug: print("-------") 
+    def randomMov(self,maxStrands:int = None,debug=False) -> Tuple[bool,str|None]:
+        if debug>0: print("-------") 
         n = self.numberOfStrands
-        if debug: print("number Of Strands:",n)
-        if debug: print(self)
-        if debug: print("type, ", typeMov)
+        if maxStrands == None:
+            maxStrands = max(4*n,20)
+        if debug>0: print("number Of Strands:",n)
+        if debug>0: print(self)
         types = [1,2,3]
         shuffle(types)
         while len(types)>0:
             typeMov = types.pop()
             if typeMov == 1:
+                if debug>0: print(typeMov)
                 createOrUndoList = [0,1] if n<maxStrands else [0]
                 shuffle(createOrUndoList)
                 while len(createOrUndoList)>0:
                     createOrUndo = createOrUndoList.pop()
                     if createOrUndo:
-                        if debug: print("Create")
+                        if debug>0: print("Create")
                         if n == 0:
                             strandToCreate = 1
                         else:
                             strandToCreate = randrange(1,n+1)
-                        if debug: print("strandToCreate",strandToCreate)
+                        if debug>0: print("strandToCreate",strandToCreate)
                         orientation = randrange(4)
                         self.createALoop(strandToCreate,orientation)
-                        if debug: print("Hecho",strandToCreate,"orientation: ",orientation)
+                        if debug>0: print("Hecho",strandToCreate,"orientation: ",orientation)
                         return True ,".createALoop({},{})".format(strandToCreate,orientation)
                     else:
-                        if debug: print("undo")
+                        if debug>0: print("undo")
                         posibleCross = [cross for cross in self.crosses if self.isPosibleUndoALoop(cross)]
                         if len(posibleCross)>0:
                             randomCross = choice(posibleCross)
-                            if debug: print("randomCross",randomCross)
+                            if debug>0: print("randomCross",randomCross)
                             self.undoALoop(randomCross)
-                            if debug: print("Hecho",randomCross)
+                            if debug>0: print("Hecho",randomCross)
                             return True, ".undoALoop({})".format(randomCross)
             elif typeMov == 2:
+                if debug>0: print(typeMov)
                 createOrUndoList = [0,1] if n<maxStrands else [0]
                 shuffle(createOrUndoList)
                 while len(createOrUndoList)>0:
                     createOrUndo = createOrUndoList.pop()
                     createOrUndo = randrange(2) if n < maxStrands  else 0
-                    if debug: print("create") if createOrUndo else print("undo")
+                    if debug>0: print("create") if createOrUndo else print("undo")
                     possibilities = [(l1,l2) for l1 in range(1,n+1) for l2 in range(1,n+1)]#El segundo puede que sea desde l1?
                     if not createOrUndo: possibilities = [(l1,l2) for (l1,l2) in possibilities if (self.typeOfStrand(l1) == StrandType.ABOVE and self.typeOfStrand(l2) == StrandType.BELOW) or (self.typeOfStrand(l1) == StrandType.BELOW and self.typeOfStrand(l2) == StrandType.ABOVE)]
                     shuffle(possibilities)
@@ -929,16 +969,17 @@ class CustomKnot:
                         (l1,l2) = possibilities.pop()
                         if createOrUndo:
                             orientation = randrange(2)
-                            if debug: print(l1,l2,orientation)
+                            if debug>0: print(l1,l2,orientation)
                             if self.createReidemeisterII(l1,l2,orientation):
-                                if debug: print("Hecho",l1,l2, "orientation", orientation)
+                                if debug>0: print("Hecho",l1,l2, "orientation", orientation)
                                 return True, ".createReidemeisterII({},{},{})".format(l1,l2,orientation)
                         else:
-                            if debug: print("intentando:", l1,l2)
+                            if debug>0: print("intentando:", l1,l2)
                             if self.undoReidemeisterII(l1,l2):
-                                if debug: print("Hecho",l1,l2)
+                                if debug>0: print("Hecho",l1,l2)
                                 return True, ".undoReidemeisterII({},{})".format(l1,l2)
             elif typeMov == 3:
+                if debug>0: print(typeMov)
                 possibilities = {StrandType.ABOVE:[], StrandType.MIDDLE:[],StrandType.BELOW:[]}
                 
                 for l in range(1,n+1):
@@ -949,17 +990,17 @@ class CustomKnot:
                 shuffle(possibilities)
                 while possibilities:
                     (l1,l2,l3) = possibilities.pop()
-                    if debug: print(l1,l2,l3)
+                    if debug>0: print(l1,l2,l3)
                     if self.reidemeisterIII(l1,l2,l3,check=False):
-                        if debug: print("Hecho III")
+                        if debug>0: print("Hecho III")
                         return True ,".reidemeisterIII({},{},{},check=False)".format(l1,l2,l3)
-                if debug: print("No se puede hacer")
-            return False, ""
+                if debug>0: print("No se puede hacer")
+        return False, ""
 
     def randomMovN(self,n: int,maxStrands:int = None,percentage = False, debug = False):
         if maxStrands == None:
-            maxStrands = 4*self.numberOfStrands
-        movs:list[str] = []
+            maxStrands = max(4*self.numberOfStrands,20)
+        movs:List[str] = []
         i = 0
         c = 0
         if percentage: startTime = time()
@@ -970,7 +1011,8 @@ class CustomKnot:
                 percent = (((i+1)/n)*100)
                 totalTime = elapsedTime*100/percent
                 remainTime = totalTime-elapsedTime
-                print("percentage randomMovN: {:3.2f}, numberOfStrands: {} ,time remaining: {}                                 ".format(percent,self.numberOfStrands,remainingTimeString(remainTime)),end="\r")
+                print("\r",end="")
+                print("percentage randomMovN: {:3.2f}, numberOfStrands: {} ,time remaining: {}                                 ".format(percent,self.numberOfStrands,remainingTimeString(remainTime)),end="")
             b,mov = self.randomMov(maxStrands,debug)
             if b:
                 i+=1
@@ -979,6 +1021,8 @@ class CustomKnot:
             if c == 100:
                 print("Parece que no se pueden hacer movimientos")
                 break
+        if percentage: print("\n",end="")
+        return movs
 
 def knotFromPyknotid(s: str) -> CustomKnot:
     if s == "0_1":
@@ -995,7 +1039,7 @@ def knotFromPyknotid(s: str) -> CustomKnot:
     k = CustomKnot(crossesFine)
     return k
 
-def direction(knot:CustomKnot,pd:PlanarDiagram,ind:Position):
+def direction(knot:CustomKnot,pd:np.ndarray,ind:Tuple[int,int]):
     """It will return 0, 1, 2 or 3 depending on the direction the strand is going."""
     number = pd[ind]
     if number <=0:
@@ -1033,20 +1077,20 @@ def direction(knot:CustomKnot,pd:PlanarDiagram,ind:Position):
 def crossesWithZone(knot:CustomKnot,planarDiagram,planarZones,zone):
     return [cross for cross in knot.crosses if zone in zonesConnectCross(cross,planarDiagram,planarZones)]
 
-def crossesWithStrand(knot:CustomKnot,strand:Strand)->list[X]:
+def crossesWithStrand(knot:CustomKnot,strand:Strand)->List[X]:
     return [cross for cross in knot.crosses if strand in cross]
 
-def crossWithStrandAndDirection(knot:CustomKnot,strand:Strand,direction:bool)->tuple[X,int]:
+def crossWithStrandAndDirection(knot:CustomKnot,strand:Strand,direction:bool)->Tuple[X,int]:
     crosses = crossesWithStrand(knot,strand)
     for cross in crosses:
         for i in cross.indexForStrand(strand):
             if cross.strands[(i+2)%4] == mod(strand + (1 if direction else -1),knot.numberOfStrands):
                 return cross,i
 
-def connectPlanarDiagram(k:CustomKnot,matrix:PlanarDiagram,remainCross:list[X],debug=False)->tuple[PlanarDiagram, dict[Strand, int]]:
+def connectPlanarDiagram(k:CustomKnot,matrix:np.ndarray,remainCross:List[X],debug=False)->Tuple[np.ndarray, Dict[Strand, int]]:
     if debug: print("conectaPlanarDiagram")
     queue = PriorityQueue[NodePD]()
-    allStrands:list[Strand] = [i for i in range(1,2*len(k.crosses)+1)]
+    allStrands:List[Strand] = [i for i in range(1,2*len(k.crosses)+1)]
     tuples = [(connected(matrix,strand),strand) for strand in allStrands]
     strandsDict = {strand:l for (c,l),strand in tuples if c}
     strands = [strand for strand in allStrands if strand not in strandsDict.keys()]
