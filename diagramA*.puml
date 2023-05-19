@@ -4,7 +4,7 @@ package "KnotStar" #DDDDDD {
     class NodeKnot {
         +knot
         +mov
-        +similarity
+        +difference
         +priority
         -successorsICreate()
         -successorsIUndo()
@@ -22,25 +22,25 @@ package "KnotStar" #DDDDDD {
         +len
         +put()
         +get()
-        +updateSimilarities()
+        +updateDifferences()
     }
 
-    class SimilarityCache {
+    class DifferenceCache {
         -cache
         -_len
         -_calls
-        +similarity()
+        +difference()
         +__len__()
     }
 
-    circle "similarity()"
+    circle "difference()"
 
     circle "areSameKnotsAStar()"
     circle "areSameKnotsAStar2()"
-    "similarity()" -up-* "areSameKnotsAStar()"
-    "similarity()" -up-* SimilarityCache
+    "difference()" -up-* "areSameKnotsAStar()"
+    "difference()" -up-* DifferenceCache
 
-    SimilarityCache --* "areSameKnotsAStar2()"
+    DifferenceCache --* "areSameKnotsAStar2()"
     PriorityQueueNodeKnot --* "areSameKnotsAStar2()"
     PriorityQueueNodeKnot --* "areSameKnotsAStar()"
     NodeKnot -right-* PriorityQueueNodeKnot

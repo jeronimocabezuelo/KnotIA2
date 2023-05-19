@@ -1,0 +1,64 @@
+@startuml Diagrama de Clases
+
+package "KnotDatabase" #DDDDDD {
+    class Gene {
+        -type
+        -strand1
+        -strand2
+        -strand3
+        -orientation
+        -isEffective
+        +mutate()
+        +applyToKnot()
+    }
+
+    class Genome {
+        -genes
+        +mutate()
+        +applyToKnot()
+    }
+
+    class IndividualKnot {
+        -knot
+        -genome
+        +computedKnot
+        +mutate()
+    }
+
+    class PopulationKnot {
+        -knot
+        -objetiveKnot
+        -population
+        -similarities
+        -numberOfIndividuals
+        -numberOfGenerations
+        -maxMutationRateType
+        -minMutationRateType
+        -maxMutationRateGene
+        -minMutationRateGene
+        -maxMutationRateGenes
+        -minMutationRateGenes
+        -mutationRateType
+        -mutationRateGene
+        -mutationRateGenes
+        -generation
+        -selection()
+        -crossover()
+        -mutate()
+        -updateMutationRates()
+        +newGeneration()
+    }
+
+    circle "crossover()"
+    circle "areSameKnotsGA()"
+    circle "randomGenome()"
+    
+    PopulationKnot -down-* "areSameKnotsGA()"
+    "crossover()" -down-* PopulationKnot
+    "randomGenome()" -down-* IndividualKnot
+    Gene -right-* Genome
+    Genome -right-* IndividualKnot
+    IndividualKnot -right-* PopulationKnot
+}
+    
+@enduml
