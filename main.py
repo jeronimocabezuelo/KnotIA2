@@ -1,7 +1,7 @@
 from CustomKnot import *
 from Path import *
-from copy import copy, deepcopy  # Utilizadmos esta funcion para copiar las matrices
-import numpy as np  # para la gestion de los arrays 2d
+from copy import copy, deepcopy  # Utilizamos esta función para copiar las matrices
+import numpy as np  # para la gestión de los arrays 2d
 import matplotlib.pyplot as plt  # Para mostrar los nudos.
 from operator import itemgetter
 from random import randrange, choice, shuffle

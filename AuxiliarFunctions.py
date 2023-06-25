@@ -26,9 +26,13 @@ def mod(a: int, n: int) -> int:
     return aux
 
 
+def mean(l: list):
+    return sum(l) / len(l)
+
+
 def remap(oldValue, oldMin, oldMax, newMin, newMax):
-    oldRange = (oldMax - oldMin)
-    newRange = (newMax - newMin)
+    oldRange = oldMax - oldMin
+    newRange = newMax - newMin
     newValue = (((oldValue - oldMin) * newRange) / oldRange) + newMin
     return newValue
 
@@ -66,28 +70,40 @@ def removeBorderOfZeros(matrix: np.ndarray):
 
 def exists(index: Tuple[int, int], matrix: np.ndarray):
     """Tells us if an index is valid for a matrix."""
-    return index[0] > -1 and index[1] > -1 and index[0] < matrix.shape[0] and index[1] < matrix.shape[1]
+    return (
+        index[0] > -1
+        and index[1] > -1
+        and index[0] < matrix.shape[0]
+        and index[1] < matrix.shape[1]
+    )
 
 
 def exists3D(index: Tuple[int, int, int], matrix: np.ndarray):
-    """Tells us if an index is valid for a 3Dmatrix."""
-    return index[0] > -1 and index[1] > -1 and index[2] > -1 and index[0] < matrix.shape[0] and index[1] < matrix.shape[1] and index[2] < matrix.shape[2]
+    """Tells us if an index is valid for a 3D matrix."""
+    return (
+        index[0] > -1
+        and index[1] > -1
+        and index[2] > -1
+        and index[0] < matrix.shape[0]
+        and index[1] < matrix.shape[1]
+        and index[2] < matrix.shape[2]
+    )
 
 
 def up(ind: Tuple[int, int]) -> Tuple[int, int]:
-    return (ind[0]-1, ind[1])
+    return (ind[0] - 1, ind[1])
 
 
 def down(ind: Tuple[int, int]) -> Tuple[int, int]:
-    return (ind[0]+1, ind[1])
+    return (ind[0] + 1, ind[1])
 
 
 def left(ind: Tuple[int, int]) -> Tuple[int, int]:
-    return (ind[0], ind[1]-1)
+    return (ind[0], ind[1] - 1)
 
 
 def right(ind: Tuple[int, int]) -> Tuple[int, int]:
-    return (ind[0], ind[1]+1)
+    return (ind[0], ind[1] + 1)
 
 
 def uDLF(i: int, ind: Tuple[int, int]) -> Tuple[int, int]:
@@ -107,9 +123,13 @@ def indicesOfNumberInMatrix(matrix: np.ndarray, number: int) -> List[Tuple[int, 
     return [(indice[0], indice[1]) for indice in np.argwhere(matrix == number)]
 
 
-def indicesOfNumberIn3DMatrix(matrix: np.ndarray, number: int) -> List[Tuple[int, int, int]]:
-    """It gives us all the index of a 3Dmatrix that has the number."""
-    return [(indice[0], indice[1], indice[2]) for indice in np.argwhere(matrix == number)]
+def indicesOfNumberIn3DMatrix(
+    matrix: np.ndarray, number: int
+) -> List[Tuple[int, int, int]]:
+    """It gives us all the index of a 3D matrix that has the number."""
+    return [
+        (indice[0], indice[1], indice[2]) for indice in np.argwhere(matrix == number)
+    ]
 
 
 def concat(matrix1: np.ndarray, matrix2: np.ndarray, axis=1) -> np.ndarray:
@@ -146,49 +166,67 @@ def replace(matrix: np.ndarray, oldNumber, newNumber) -> np.ndarray:
 
 def createGaps(matrix: np.ndarray) -> np.ndarray:
     """Separate the strands so that more paths enter."""
-    m2 = np.zeros((matrix.shape[0]*2-1, matrix.shape[1]), dtype=int)
+    m2 = np.zeros((matrix.shape[0] * 2 - 1, matrix.shape[1]), dtype=int)
     for i in range(matrix.shape[0]):
-        m2[i*2, :] = matrix[i, :]
-        m3 = np.zeros((m2.shape[0], m2.shape[1]*2-1), dtype=int)
+        m2[i * 2, :] = matrix[i, :]
+        m3 = np.zeros((m2.shape[0], m2.shape[1] * 2 - 1), dtype=int)
     for j in range(m2.shape[1]):
-        m3[:, j*2] = m2[:, j]
+        m3[:, j * 2] = m2[:, j]
         m3copy = copy(m3)
     for i in range(m3.shape[0]):
         for j in range(m3.shape[1]):
             if m3copy[i, j] == 0:
-                if i > 0 and i < m3.shape[0]-1:
-                    if m3[i-1, j] < 0:
-                        m3[i, j] = m3[i+1, j]
-                        if not (m3[i+3, j] == m3[i, j] or m3[i+1, j+2] == m3[i, j] or m3[i+1, j-2] == m3[i, j]):
-                            m3[i+1, j] = 0
+                if i > 0 and i < m3.shape[0] - 1:
+                    if m3[i - 1, j] < 0:
+                        m3[i, j] = m3[i + 1, j]
+                        if not (
+                            m3[i + 3, j] == m3[i, j]
+                            or m3[i + 1, j + 2] == m3[i, j]
+                            or m3[i + 1, j - 2] == m3[i, j]
+                        ):
+                            m3[i + 1, j] = 0
                         continue
-                    elif m3[i+1, j] < 0:
-                        m3[i, j] = m3[i-1, j]
-                        if not (m3[i-3, j] == m3[i, j] or m3[i-1, j+2] == m3[i, j] or m3[i-1, j-2] == m3[i, j]):
-                            m3[i-1, j] = 0
+                    elif m3[i + 1, j] < 0:
+                        m3[i, j] = m3[i - 1, j]
+                        if not (
+                            m3[i - 3, j] == m3[i, j]
+                            or m3[i - 1, j + 2] == m3[i, j]
+                            or m3[i - 1, j - 2] == m3[i, j]
+                        ):
+                            m3[i - 1, j] = 0
                         continue
-                    elif m3[i-1, j] == m3[i+1, j] and m3[i+1, j] != 0:
-                        m3[i, j] = m3[i-1, j]
+                    elif m3[i - 1, j] == m3[i + 1, j] and m3[i + 1, j] != 0:
+                        m3[i, j] = m3[i - 1, j]
                         continue
-                if j > 0 and j < m3.shape[1]-1:
-                    if m3[i, j-1] < 0:
-                        m3[i, j] = m3[i, j+1]
-                        if not (m3[i, j+3] == m3[i, j] or m3[i+2, j+1] == m3[i, j] or m3[i-2, j+1] == m3[i, j]):
-                            m3[i, j+1] = 0
+                if j > 0 and j < m3.shape[1] - 1:
+                    if m3[i, j - 1] < 0:
+                        m3[i, j] = m3[i, j + 1]
+                        if not (
+                            m3[i, j + 3] == m3[i, j]
+                            or m3[i + 2, j + 1] == m3[i, j]
+                            or m3[i - 2, j + 1] == m3[i, j]
+                        ):
+                            m3[i, j + 1] = 0
                         continue
-                    elif m3[i, j+1] < 0:
-                        m3[i, j] = m3[i, j-1]
-                        if not (m3[i, j-3] == m3[i, j] or m3[i+2, j-1] == m3[i, j] or m3[i-2, j-1] == m3[i, j]):
-                            m3[i, j-1] = 0
+                    elif m3[i, j + 1] < 0:
+                        m3[i, j] = m3[i, j - 1]
+                        if not (
+                            m3[i, j - 3] == m3[i, j]
+                            or m3[i + 2, j - 1] == m3[i, j]
+                            or m3[i - 2, j - 1] == m3[i, j]
+                        ):
+                            m3[i, j - 1] = 0
                         continue
-                    elif m3[i, j-1] == m3[i, j+1] and m3[i, j+1] != 0:
-                        m3[i, j] = m3[i, j-1]
+                    elif m3[i, j - 1] == m3[i, j + 1] and m3[i, j + 1] != 0:
+                        m3[i, j] = m3[i, j - 1]
                         continue
     return m3
 
 
 # TODO: Hacer mas corto eso con UDLF
-def walkWithDirection(matrix: np.ndarray, org: Tuple[int, int], des: Tuple[int, int], dir: int):
+def walkWithDirection(
+    matrix: np.ndarray, org: Tuple[int, int], des: Tuple[int, int], dir: int
+):
     """Walk a path of -9 following the direction"""
     prevDirection = None
     visited: List[Tuple[int, int]] = []
@@ -199,9 +237,9 @@ def walkWithDirection(matrix: np.ndarray, org: Tuple[int, int], des: Tuple[int, 
                 if matrix[up(org)] == -9 or up(org) == des:
                     org = up(org)
                     if prevDirection == 1:
-                        dir = (dir-1) % 4
+                        dir = (dir - 1) % 4
                     elif prevDirection == 3:
-                        dir = (dir+1) % 4
+                        dir = (dir + 1) % 4
                     prevDirection = 0
                     continue
         if not down(org) in visited:
@@ -209,9 +247,9 @@ def walkWithDirection(matrix: np.ndarray, org: Tuple[int, int], des: Tuple[int, 
                 if matrix[down(org)] == -9 or down(org) == des:
                     org = down(org)
                     if prevDirection == 1:
-                        dir = (dir+1) % 4
+                        dir = (dir + 1) % 4
                     elif prevDirection == 3:
-                        dir = (dir-1) % 4
+                        dir = (dir - 1) % 4
                     prevDirection = 2
                     continue
         if not left(org) in visited:
@@ -219,9 +257,9 @@ def walkWithDirection(matrix: np.ndarray, org: Tuple[int, int], des: Tuple[int, 
                 if matrix[left(org)] == -9 or left(org) == des:
                     org = left(org)
                     if prevDirection == 0:
-                        dir = (dir-1) % 4
+                        dir = (dir - 1) % 4
                     elif prevDirection == 2:
-                        dir = (dir+1) % 4
+                        dir = (dir + 1) % 4
                     prevDirection = 3
                     continue
         if not right(org) in visited:
@@ -229,19 +267,24 @@ def walkWithDirection(matrix: np.ndarray, org: Tuple[int, int], des: Tuple[int, 
                 if matrix[right(org)] == -9 or right(org) == des:
                     org = right(org)
                     if prevDirection == 0:
-                        dir = (dir+1) % 4
+                        dir = (dir + 1) % 4
                     elif prevDirection == 2:
-                        dir = (dir-1) % 4
+                        dir = (dir - 1) % 4
                     prevDirection = 1
                     continue
     return visited, dir
 
 
 def findSubMatrix3x3In(matrix: np.ndarray, subMatrix3x3: np.ndarray):
-    """Find a 3x3 submatrix inside another."""
+    """Find a 3x3 sub-matrix inside another."""
     centers = indicesOfNumberInMatrix(matrix, subMatrix3x3[1][1])
     for center in centers:
-        if matrix[up(center)] == subMatrix3x3[0][1] and matrix[right(center)] == subMatrix3x3[1][2] and matrix[down(center)] == subMatrix3x3[2][1] and matrix[left(center)] == subMatrix3x3[1][0]:
+        if (
+            matrix[up(center)] == subMatrix3x3[0][1]
+            and matrix[right(center)] == subMatrix3x3[1][2]
+            and matrix[down(center)] == subMatrix3x3[2][1]
+            and matrix[left(center)] == subMatrix3x3[1][0]
+        ):
             return center
     return None
 
@@ -250,14 +293,18 @@ def removeUnnecessaryRow(pd: np.ndarray) -> np.ndarray:
     """Delete unnecessary rows in a planar diagram."""
     for row in reversed(range(pd.shape[0])):
         toRemove = True
-        if (row > 0 and contains(pd[row-1], [-1, -2])) or (row < pd.shape[0]-1 and contains(pd[row+1], [-1, -2])):
+        if (row > 0 and contains(pd[row - 1], [-1, -2])) or (
+            row < pd.shape[0] - 1 and contains(pd[row + 1], [-1, -2])
+        ):
             continue
-        for c in range(pd.shape[1]-1):
+        for c in range(pd.shape[1] - 1):
             if pd[row][c] < 0:
                 toRemove = False
-            if pd[row][c] == pd[row][c+1] and pd[row][c] != 0:
+            if pd[row][c] == pd[row][c + 1] and pd[row][c] != 0:
                 toRemove = False
-            if (row > 0 and contains(pd[row-1], [-1, -2])) or (row < pd.shape[0]-1 and contains(pd[row+1], [-1, -2])):
+            if (row > 0 and contains(pd[row - 1], [-1, -2])) or (
+                row < pd.shape[0] - 1 and contains(pd[row + 1], [-1, -2])
+            ):
                 toRemove = False
         if toRemove:
             pd = np.delete(pd, row, axis=0)
@@ -268,16 +315,20 @@ def removeUnnecessaryColumn(pd: np.ndarray) -> np.ndarray:
     """Delete unnecessary Column in a planar diagram."""
     for c in reversed(range(pd.shape[1])):
         toRemove = True
-        if (c > 0 and contains(pd[:, c-1], [-1, -2])) or (c < pd.shape[1]-1 and contains(pd[:, c+1], [-1, -2])):
+        if (c > 0 and contains(pd[:, c - 1], [-1, -2])) or (
+            c < pd.shape[1] - 1 and contains(pd[:, c + 1], [-1, -2])
+        ):
             continue
-        for row in range(pd.shape[0]-1):
+        for row in range(pd.shape[0] - 1):
             if pd[row][c] < 0:
                 toRemove = False
                 break
-            if pd[row][c] == pd[row+1][c] and pd[row][c] != 0:
+            if pd[row][c] == pd[row + 1][c] and pd[row][c] != 0:
                 toRemove = False
                 break
-            if (c > 0 and contains(pd[:, c-1], [-1, -2])) or (c < pd.shape[1]-1 and contains(pd[:, c+1], [-1, -2])):
+            if (c > 0 and contains(pd[:, c - 1], [-1, -2])) or (
+                c < pd.shape[1] - 1 and contains(pd[:, c + 1], [-1, -2])
+            ):
                 toRemove = False
         if toRemove:
             pd = np.delete(pd, c, axis=1)
@@ -296,20 +347,20 @@ def remainingTimeString(time: float) -> str:
         return "<1s"
     time = int(time)
     if time < 60:
-        return str(time)+"s"
-    minutes = time//60
+        return str(time) + "s"
+    minutes = time // 60
     second = time % 60
     if minutes < 60:
-        return str(minutes)+"min "+str(second)+"s"
-    hours = minutes//60
+        return str(minutes) + "min " + str(second) + "s"
+    hours = minutes // 60
     minutes = minutes % 60
-    return str(hours)+"h "+str(minutes)+"min "+str(second)+"s"
+    return str(hours) + "h " + str(minutes) + "min " + str(second) + "s"
 
 
-_T = TypeVar('_T')
+_T = TypeVar("_T")
 
 
-class sset(set):
+class simpleSet(set):
     def add(self, __element: _T) -> bool:
         prev_len = len(self)
         super().add(__element)  # O(N log N) lookup
@@ -328,12 +379,17 @@ def normalizeImageDirection(image, newShape, vertical=0, direction=0):
         return image
     obj = 0 if direction else image.shape[vertical]
     image = np.insert(image, obj, 0, axis=vertical)
-    return normalizeImageDirection(image, newShape, vertical=vertical, direction=(direction+1) % 2)
+    return normalizeImageDirection(
+        image, newShape, vertical=vertical, direction=(direction + 1) % 2
+    )
 
 
 def addLayerToMatrix(matrix, axis, aheadOrBehind, value=0):
-    layer = np.repeat(value*np.ones(matrix.shape[0], dtype=matrix.dtype)[
-                      :, None, None], matrix.shape[axis], axis=axis)
+    layer = np.repeat(
+        value * np.ones(matrix.shape[0], dtype=matrix.dtype)[:, None, None],
+        matrix.shape[axis],
+        axis=axis,
+    )
     axis = 1 if axis == 2 else 2
     if aheadOrBehind:
         return np.concatenate((layer, matrix), axis=axis)

@@ -77,14 +77,14 @@ def knotDatabase(maxCrosses: int, numberOfKnots: int, numberOfRandomMov: int = 1
     df = singleDatabase(maxCrosses)
     df = df.reset_index()  # make sure indexes pair with number of rows
     auxDict = {"name": [], "crosses": [], "numberOfStrands": []}
-    knotSetNames: Dict[str, sset[CustomKnot]] = dict()
+    knotSetNames: Dict[str, simpleSet[CustomKnot]] = dict()
     if type(initDB) != type(None):
         for index, row in initDB.iterrows():
             name = row["name"]
             if not name in names:
                 continue
             if not name in knotSetNames.keys():
-                knotSetNames[name] = sset()
+                knotSetNames[name] = simpleSet()
             if name in list(initDB.name):
                 crosses = row["crosses"]
                 knot = CustomKnot(crosses)
@@ -96,8 +96,8 @@ def knotDatabase(maxCrosses: int, numberOfKnots: int, numberOfRandomMov: int = 1
     for index, row in df.iterrows():
         name = row["name"]
         if not name in knotSetNames.keys():
-            knotSetNames[name] = sset()
-        knotSet: sset[CustomKnot] = knotSetNames[name]
+            knotSetNames[name] = simpleSet()
+        knotSet: simpleSet[CustomKnot] = knotSetNames[name]
         i = len([name_dict for name_dict in auxDict["name"] if name_dict == name])
         while i < numberOfKnots:
             # for i in range(numberOfKnots):
@@ -132,12 +132,12 @@ def knotDatabase(maxCrosses: int, numberOfKnots: int, numberOfRandomMov: int = 1
 
 def combineDatabase(dbs: List[pd.DataFrame]):
     auxDict = {"name": [], "crosses": [], "numberOfStrands": []}
-    knotSetNames: Dict[str, sset[CustomKnot]] = dict()
+    knotSetNames: Dict[str, simpleSet[CustomKnot]] = dict()
     for db in dbs:
         for index, row in db.iterrows():
             name = row["name"]
             if not name in knotSetNames.keys():
-                knotSetNames[name] = sset()
+                knotSetNames[name] = simpleSet()
             crosses = row["crosses"]
             knot = CustomKnot(crosses)
             if knotSetNames[name].add(knot):
@@ -232,8 +232,8 @@ def createImagesForDatabase(path: str = "databases/masterPD.csv", limitNumberOfC
     for name in dictionary.keys():
         print("Sorting", name)
         # dictionary[name] = sorted(dictionary[name],key=lambda knot: knot.numberOfStrands)
-        dictionary[name] = sorted(dictionary[name], key=lambda knot: max(
-            knot.pd.shape[0], knot.pd.shape[1]))
+        dictionary[name] = sorted(dictionary[name],
+                                  key=lambda knot: max(knot.pd.shape[0], knot.pd.shape[1]))
         print("sorted")
     # print(list(map(lambda knot: knot.numberOfStrands, dictionary["0_1"]) ))
 

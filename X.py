@@ -43,7 +43,11 @@ class X:
         for i in range(len(self.strands)):
             if self.strands[i] == strand:
                 return i % 2 == 1
-
+    def isPositive(self, numberOfStrands: int):
+        if self[2] == mod(self[0]+1,numberOfStrands): base = 0
+        else: base = 2
+        return self[base+1] == mod(self[base-1]+1,numberOfStrands)
+    
     def __hash__(self):
         return hash(self.__repr__())
 

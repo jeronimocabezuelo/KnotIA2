@@ -4,7 +4,6 @@ from time import time
 
 
 class NodeKnot:
-
     def __init__(self, knot: CustomKnot, mov: List[str] = []):
         self.knot = knot
         self.mov = mov
@@ -32,7 +31,7 @@ class NodeKnot:
             movCopy.append("createALoop({},{})".format(0, 0))
             yield NodeKnot(knotCopy, movCopy)
         if n < maxStrands:
-            for i in range(1, n+1):
+            for i in range(1, n + 1):
                 for orientation in range(4):
                     knotCopy = deepcopy(self.knot)
                     knotCopy.createALoop(i, orientation)
@@ -43,7 +42,7 @@ class NodeKnot:
     def successorsIUndo(self, n: int = None):
         if n == None:
             n = self.knot.numberOfStrands
-        for i in range(1, n+1):
+        for i in range(1, n + 1):
             knotCopy = deepcopy(self.knot)
             movCopy = deepcopy(self.mov)
             if knotCopy.undoALoop(i):
@@ -63,28 +62,44 @@ class NodeKnot:
         if n == None:
             n = self.knot.numberOfStrands
         if n < maxStrands:
-            possibilities = [(l1, l2) for l1 in range(1, n+1)
-                             for l2 in range(l1, n+1)]
-            for (l1, l2) in possibilities:
+            possibilities = [
+                (l1, l2) for l1 in range(1, n + 1) for l2 in range(l1, n + 1)
+            ]
+            for l1, l2 in possibilities:
                 knotCopy = deepcopy(self.knot)
-                typeReidemeisterII = knotCopy.isPosibleCreateReidemeisterII(
-                    l1, l2)
+                typeReidemeisterII = knotCopy.isPosibleCreateReidemeisterII(l1, l2)
                 if typeReidemeisterII != 0:
                     for orientation in range(4):
                         knotCopy = deepcopy(self.knot)
                         movCopy = deepcopy(self.mov)
-                        if knotCopy.createReidemeisterII(l1, l2, orientation, typeReidemeisterII):
-                            movCopy.append("createReidemeisterII({},{},{},{})".format(
-                                l1, l2, orientation, typeReidemeisterII))
+                        if knotCopy.createReidemeisterII(
+                            l1, l2, orientation, typeReidemeisterII
+                        ):
+                            movCopy.append(
+                                "createReidemeisterII({},{},{},{})".format(
+                                    l1, l2, orientation, typeReidemeisterII
+                                )
+                            )
                             yield NodeKnot(knotCopy, movCopy)
 
     def successorsIIUndo(self, n: int = None):
         # print("IIUndo")
         if n == None:
             n = self.knot.numberOfStrands
-        possibilities = [(l1, l2) for l1 in range(1, n+1) for l2 in range(l1, n+1) if (self.knot.typeOfStrand(l1) == StrandType.ABOVE and self.knot.typeOfStrand(
-            l2) == StrandType.BELOW) or (self.knot.typeOfStrand(l1) == StrandType.BELOW and self.knot.typeOfStrand(l2) == StrandType.ABOVE)]
-        for (l1, l2) in possibilities:
+        possibilities = [
+            (l1, l2)
+            for l1 in range(1, n + 1)
+            for l2 in range(l1, n + 1)
+            if (
+                self.knot.typeOfStrand(l1) == StrandType.ABOVE
+                and self.knot.typeOfStrand(l2) == StrandType.BELOW
+            )
+            or (
+                self.knot.typeOfStrand(l1) == StrandType.BELOW
+                and self.knot.typeOfStrand(l2) == StrandType.ABOVE
+            )
+        ]
+        for l1, l2 in possibilities:
             knotCopy = deepcopy(self.knot)
             movCopy = deepcopy(self.mov)
             if knotCopy.undoReidemeisterII(l1, l2):
@@ -104,21 +119,38 @@ class NodeKnot:
         # print("III")
         if n == None:
             n = self.knot.numberOfStrands
-        possibilities = {StrandType.ABOVE: [],
-                         StrandType.MIDDLE: [], StrandType.BELOW: [], None: []}
-        for l in range(1, n+1):
+        possibilities = {
+            StrandType.ABOVE: [],
+            StrandType.MIDDLE: [],
+            StrandType.BELOW: [],
+            None: [],
+        }
+        for l in range(1, n + 1):
             t = self.knot.typeOfStrand(l)
             possibilities[t].append(l)
-        possibilities = [(l1, l2, l3) for l1 in possibilities[StrandType.BELOW]
-                         for l2 in possibilities[StrandType.MIDDLE] for l3 in possibilities[StrandType.ABOVE]]
-        possibilities = [(l1, l2, l3) for (l1, l2, l3) in possibilities if mod(l1+1, n) != l2 and mod(l1-1, n)
-                         != l2 and mod(l1+1, n) != l3 and mod(l1-1, n) != l3 and mod(l2+1, n) != l3 and mod(l2-1, n) != l3]
-        for (l1, l2, l3) in possibilities:
+        possibilities = [
+            (l1, l2, l3)
+            for l1 in possibilities[StrandType.BELOW]
+            for l2 in possibilities[StrandType.MIDDLE]
+            for l3 in possibilities[StrandType.ABOVE]
+        ]
+        possibilities = [
+            (l1, l2, l3)
+            for (l1, l2, l3) in possibilities
+            if mod(l1 + 1, n) != l2
+            and mod(l1 - 1, n) != l2
+            and mod(l1 + 1, n) != l3
+            and mod(l1 - 1, n) != l3
+            and mod(l2 + 1, n) != l3
+            and mod(l2 - 1, n) != l3
+        ]
+        for l1, l2, l3 in possibilities:
             knotCopy = deepcopy(self.knot)
             movCopy = deepcopy(self.mov)
             if knotCopy.reidemeisterIII(l1, l2, l3, check=False):
                 movCopy.append(
-                    "reidemeisterIII({},{},{},check=False)".format(l1, l2, l3))
+                    "reidemeisterIII({},{},{},check=False)".format(l1, l2, l3)
+                )
                 yield NodeKnot(knotCopy, movCopy)
 
     def successors(self, maxStrands: int):
@@ -153,7 +185,7 @@ class NodeKnot:
 
     def deepSuccessors(self, deep: int, maxStrands: int):
         currentSuccessors = list()
-        currentSuccessorsKnots = sset()
+        currentSuccessorsKnots = simpleSet()
         for successor in self.successors(maxStrands):
             if deep >= 1:
                 if currentSuccessorsKnots.add(successor.knot):
@@ -163,14 +195,16 @@ class NodeKnot:
                 yield successor
         if deep >= 1:
             for successor in currentSuccessors:
-                for subSuccessor in successor.deepSuccessors(deep-1, maxStrands):
+                for subSuccessor in successor.deepSuccessors(deep - 1, maxStrands):
                     yield subSuccessor
 
     @property
     def priority(self) -> float:
         if self.difference == None:
-            raise Exception(
-                "Todavía no puedes calcular la prioridad. Este nodo no tiene diferencia")
+            return len(self.mov)
+            # raise Exception(
+            #     "Todavía no puedes calcular la prioridad. Este nodo no tiene diferencia"
+            # )
         return self.difference + len(self.mov)  # /10
 
 
@@ -213,9 +247,12 @@ class PriorityQueueNodeKnot:
         if self.len > maxKnots:
             prioritiesLitsOfList = self.priorities()
             priorities = [
-                priority for prioritiesList in prioritiesLitsOfList for priority in prioritiesList]
+                priority
+                for prioritiesList in prioritiesLitsOfList
+                for priority in prioritiesList
+            ]
             priorities.sort()
-            worst = priorities[maxKnots-1]
+            worst = priorities[maxKnots - 1]
             print("Worst", worst)
             hashes = [h for h in self.queue.keys()]
             for h in hashes:
@@ -239,7 +276,9 @@ class PriorityQueueNodeKnot:
         self.queue.pop(node.knot.representationForHash)
         return node
 
-    def updateDifferences(self, newObjetive: CustomKnot, cache: DifferenceCache = None, type: int = 1):
+    def updateDifferences(
+        self, newObjetive: CustomKnot, cache: DifferenceCache = None, type: int = 1
+    ):
         if cache == None:
             for node in self.nodes():
                 if type == 1:
@@ -267,7 +306,7 @@ class PriorityQueueNodeKnot:
 
     @property
     def hasRepeated(self):
-        s = sset()
+        s = simpleSet()
         for node in self.nodes():
             if not s.add(node.knot):
                 return True
@@ -277,16 +316,18 @@ class PriorityQueueNodeKnot:
 def difference(knot1: CustomKnot, knot2: CustomKnot):
     n1 = knot1.numberOfStrands
     n2 = knot2.numberOfStrands
-    auxes: List[float] = []
+    auxList: List[float] = []
     for rotation in knot1.allRotationYield():
         aux = 0
         for s in range(max(n1, n2)):
             aux += differenceOfStrand(s, rotation, knot2, n1=n1, n2=n2)
-        auxes.append(aux)
-    return min(auxes)+abs(n1-n2)
+        auxList.append(aux)
+    return min(auxList) + abs(n1 - n2)
 
 
-def differenceOfStrand(s: Strand, knot1: CustomKnot, knot2: CustomKnot, n1: int | None = None, n2=None):
+def differenceOfStrand(
+    s: Strand, knot1: CustomKnot, knot2: CustomKnot, n1: int | None = None, n2=None
+):
     if n1 == None:
         n1 = knot1.numberOfStrands
     if n2 == None:
@@ -305,16 +346,16 @@ def differenceOfStrand(s: Strand, knot1: CustomKnot, knot2: CustomKnot, n1: int 
     strandAbove1 = cross1.isStrandAbove(s1)
     strandAbove2 = cross2.isStrandAbove(s2)
     aux = strandAbove1 != strandAbove2
-    right1 = cross1[(p1+1) % 4]
-    right2 = cross2[(p2+1) % 4]
-    left1 = cross1[(p1-1) % 4]
-    left2 = cross2[(p2-1) % 4]
-    d1 = right1-left1
-    d2 = right2-left2
+    right1 = cross1[(p1 + 1) % 4]
+    right2 = cross2[(p2 + 1) % 4]
+    left1 = cross1[(p1 - 1) % 4]
+    left2 = cross2[(p2 - 1) % 4]
+    d1 = right1 - left1
+    d2 = right2 - left2
     aux += d1 != d2
     otherS1 = min(right1, left1)
     otherS2 = min(right2, left2)
-    d = abs(otherS1-otherS2)
+    d = abs(otherS1 - otherS2)
     aux += remap(d, 0, max(n1, n2), 0, 1)
     return aux
 
@@ -396,8 +437,10 @@ class DifferenceSimpleCache:
             knotReprese: str = knot
         else:
             raise Exception("Incorrect Type")
-        if knotReprese in self.differences.keys():
-            tupleDifference = self.differences[knotReprese]
+
+        tupleDifference = self.differences.get(knotReprese)
+
+        if tupleDifference != None:
             if self.times:
                 print("Time Difference sin calculo", time() - start)
             return tupleDifference
@@ -424,10 +467,11 @@ class DifferenceCache:
         self._calls += 1
         representation1 = knot1.representationForHash
         representation2 = knot2.representationForHash
-        if representation1 in self.cache:
-            dict1 = self.cache[representation1]
-            if representation2 in dict1:
-                return dict1[representation2]
+        dict1 = self.cache.get(representation1)
+        if dict1 != None:
+            s = dict1.get(representation2)
+            if s != None:
+                return s
             else:
                 s = difference(knot1, knot2)
                 dict1[representation2] = s
@@ -444,7 +488,14 @@ class DifferenceCache:
         return self._len
 
 
-def areSameKnotsAStar(knot1: CustomKnot, knot2: CustomKnot, maxStrands: int = None, debug=False, times=False, timeLimit: float = float('inf')):
+def areSameKnotsAStar(
+    knot1: CustomKnot,
+    knot2: CustomKnot,
+    maxStrands: int = None,
+    debug=False,
+    times=False,
+    timeLimit: float = float("inf"),
+):
     if knot1 == knot2:
         return True, [""]
     if maxStrands == None:
@@ -453,13 +504,20 @@ def areSameKnotsAStar(knot1: CustomKnot, knot2: CustomKnot, maxStrands: int = No
     initialNode.difference = difference(knot1, knot2)
     queue = PriorityQueueNodeKnot()
     queue.put(initialNode)
-    visited = sset()
+    visited = simpleSet()
     startTime = time()
     while not queue.empty:
         node = queue.get()
         if debug > 0:
-            print("queue len:", queue.len, "   visited len", len(visited), "get node difference: {:3.2f}, priority: {:3.2f}, numberOfStrands: {}".format(
-                node.difference, node.priority, node.knot.numberOfStrands))
+            print(
+                "queue len:",
+                queue.len,
+                "   visited len",
+                len(visited),
+                "get node difference: {:3.2f}, priority: {:3.2f}, numberOfStrands: {}".format(
+                    node.difference, node.priority, node.knot.numberOfStrands
+                ),
+            )
             print("Mov: ", node.mov)
 
         if not visited.add(node.knot.representationForHash):
@@ -472,7 +530,7 @@ def areSameKnotsAStar(knot1: CustomKnot, knot2: CustomKnot, maxStrands: int = No
         if times > 0:
             totalTime = 0.0
         for successor in node.successors(maxStrands):
-            if (time()-startTime) > timeLimit:
+            if (time() - startTime) > timeLimit:
                 return False, []
             i += 1
             if times > 0:
@@ -491,8 +549,9 @@ def areSameKnotsAStar(knot1: CustomKnot, knot2: CustomKnot, maxStrands: int = No
             if times > 1:
                 print("Time check2", time() - start)
             if debug > 1:
-                print("{}: {:3.2f}, mov: {}".format(
-                    i, successor.priority, successor.mov))
+                print(
+                    "{}: {:3.2f}, mov: {}".format(i, successor.priority, successor.mov)
+                )
             if successor.difference == 0:
                 queue.put(successor)
                 return True, successor.mov
@@ -501,12 +560,20 @@ def areSameKnotsAStar(knot1: CustomKnot, knot2: CustomKnot, maxStrands: int = No
             queue.put(successor)
             if times > 0:
                 print("Time successor", time() - start)
-                totalTime += time()-start
+                totalTime += time() - start
         if times > 0:
             print("Time expandNode ", totalTime)
 
 
-def areSameKnotsAStar2(knot1: CustomKnot, knot2: CustomKnot, maxStrands: int = None, debug=False, times=False, timeLimit: float = float('inf'), cachePrint=False):
+def areSameKnotsAStar2(
+    knot1: CustomKnot,
+    knot2: CustomKnot,
+    maxStrands: int = None,
+    debug=False,
+    times=False,
+    timeLimit: float = float("inf"),
+    cachePrint=False,
+):
     if knot1 == knot2:
         return True, [""], [""]
     if maxStrands == None:
@@ -528,57 +595,69 @@ def areSameKnotsAStar2(knot1: CustomKnot, knot2: CustomKnot, maxStrands: int = N
     while not (queue1.empty or queue2.empty):
         if debug > 0:
             print("-----")
-            print("DifferenceCache len {} calls {}".format(
-                len(cache), cache._calls))
-            print("len(queue1) = ", queue1.len,
-                  "len(visited1) ", len(visited1))
-            print("bestNode1 priority {:3.2f}".format(
-                bestNode1.priority), " mov", bestNode1.mov)
+            print("DifferenceCache len {} calls {}".format(len(cache), cache._calls))
+            print("len(queue1) = ", queue1.len, "len(visited1) ", len(visited1))
+            print(
+                "bestNode1 priority {:3.2f}".format(bestNode1.priority),
+                " mov",
+                bestNode1.mov,
+            )
 
         node1 = queue1.get()
 
         if debug > 0:
             print()
-            print("node1 priority {:3.2f}".format(
-                node1.priority), " mov", node1.mov)
+            print("node1 priority {:3.2f}".format(node1.priority), " mov", node1.mov)
 
         visited1[node1.knot.representationForHash] = node1
         i = 0
         flag = False
         for successor in node1.successors(maxStrands):
-            if (time()-startTime) > timeLimit:
+            if (time() - startTime) > timeLimit:
                 if cachePrint:
-                    print("DifferenceCache len {} calls {}".format(
-                        len(cache), cache._calls))
+                    print(
+                        "DifferenceCache len {} calls {}".format(
+                            len(cache), cache._calls
+                        )
+                    )
                 return False, [], []
             i += 1
             if successor.knot.representationForHash in visited1:
                 if debug > 1:
                     print(i, "ya esta en visited")
                 continue
-            successor.difference = cache.difference(
-                successor.knot, bestNode2.knot)
+            successor.difference = cache.difference(successor.knot, bestNode2.knot)
             if debug > 1:
-                print("{}: {:3.2f}, mov: {}".format(
-                    i, successor.priority, successor.mov))
+                print(
+                    "{}: {:3.2f}, mov: {}".format(i, successor.priority, successor.mov)
+                )
             if successor.difference == 0:
                 if cachePrint:
-                    print("DifferenceCache len {} calls {}".format(
-                        len(cache), cache._calls))
+                    print(
+                        "DifferenceCache len {} calls {}".format(
+                            len(cache), cache._calls
+                        )
+                    )
                 return True, successor.mov, bestNode2.mov
             if successor.knot.representationForHash in visited2:
                 if cachePrint:
-                    print("DifferenceCache len {} calls {}".format(
-                        len(cache), cache._calls))
-                return True, successor.mov, visited2[successor.knot.representationForHash].mov
+                    print(
+                        "DifferenceCache len {} calls {}".format(
+                            len(cache), cache._calls
+                        )
+                    )
+                return (
+                    True,
+                    successor.mov,
+                    visited2[successor.knot.representationForHash].mov,
+                )
 
             if successor.priority < bestNode1.priority:
                 flag = True
                 if debug > 0:
                     print(i, "Mejora bestNode1")
                 bestNode1 = successor
-                bestNode2.difference = cache.difference(
-                    bestNode1.knot, bestNode2.knot)
+                bestNode2.difference = cache.difference(bestNode1.knot, bestNode2.knot)
             queue1.put(successor)
 
         if flag:
@@ -586,55 +665,68 @@ def areSameKnotsAStar2(knot1: CustomKnot, knot2: CustomKnot, maxStrands: int = N
             queue2.updateDifferences(bestNode1.knot, cache, type=2)
 
         if debug > 0:
-            print("len(queue2) = ", queue2.len,
-                  "len(visited2) ", len(visited2))
-            print("bestNode2 priority {:3.2f}".format(
-                bestNode2.priority), " mov", bestNode2.mov)
+            print("len(queue2) = ", queue2.len, "len(visited2) ", len(visited2))
+            print(
+                "bestNode2 priority {:3.2f}".format(bestNode2.priority),
+                " mov",
+                bestNode2.mov,
+            )
 
         node2 = queue2.get()
 
         if debug > 0:
             print()
-            print("node2 priority {:3.2f}".format(
-                node2.priority), " mov", node2.mov)
+            print("node2 priority {:3.2f}".format(node2.priority), " mov", node2.mov)
 
         visited2[node2.knot.representationForHash] = node2
         i = 0
         flag = False
         for successor in node2.successors(maxStrands):
-            if (time()-startTime) > timeLimit:
+            if (time() - startTime) > timeLimit:
                 if cachePrint:
-                    print("DifferenceCache len {} calls {}".format(
-                        len(cache), cache._calls))
+                    print(
+                        "DifferenceCache len {} calls {}".format(
+                            len(cache), cache._calls
+                        )
+                    )
                 return False, [], []
             i += 1
             if successor.knot.representationForHash in visited2:
                 if debug > 1:
                     print(i, "ya esta en visited")
                 continue
-            successor.difference = cache.difference(
-                bestNode1.knot, successor.knot)
+            successor.difference = cache.difference(bestNode1.knot, successor.knot)
             if debug > 1:
-                print("{}: {:3.2f}, mov: {}".format(
-                    i, successor.priority, successor.mov))
+                print(
+                    "{}: {:3.2f}, mov: {}".format(i, successor.priority, successor.mov)
+                )
             if successor.difference == 0:
                 if cachePrint:
-                    print("DifferenceCache len {} calls {}".format(
-                        len(cache), cache._calls))
+                    print(
+                        "DifferenceCache len {} calls {}".format(
+                            len(cache), cache._calls
+                        )
+                    )
                 return True, bestNode1.mov, successor.mov
             if successor.knot.representationForHash in visited1:
                 if cachePrint:
-                    print("DifferenceCache len {} calls {}".format(
-                        len(cache), cache._calls))
-                return True, visited1[successor.knot.representationForHash].mov, successor.mov
+                    print(
+                        "DifferenceCache len {} calls {}".format(
+                            len(cache), cache._calls
+                        )
+                    )
+                return (
+                    True,
+                    visited1[successor.knot.representationForHash].mov,
+                    successor.mov,
+                )
 
             if successor.priority < bestNode2.priority:
                 flag = True
                 if debug > 0:
                     print(i, "Mejora bestNode2")
                 bestNode2 = successor
-                bestNode1.difference = difference(
-                    bestNode1.knot, bestNode2.knot)
+                bestNode1.difference = difference(bestNode1.knot, bestNode2.knot)
             queue2.put(successor)
 
         if flag:
@@ -688,3 +780,78 @@ class CustomKnotStar(CustomKnot):
 
         self.eval(".{}".format(mov))
         return True, ".{}".format(mov)
+
+
+def areSameKnotsAStar3(
+    knot1: CustomKnot,
+    knot2: CustomKnot,
+    maxStrands: int = None,
+    debug=False,
+    times=False,
+    timeLimit: float = float("inf"),
+):
+    if knot1 == knot2:
+        return True, [""]
+    if maxStrands == None:
+        maxStrands = knot1.numberOfStrands + knot2.numberOfStrands
+    initialNode = NodeKnot(deepcopy(knot1))
+    # initialNode.difference = difference(knot1, knot2)
+    queue = PriorityQueueNodeKnot()
+    queue.put(initialNode)
+    visited = simpleSet()
+    startTime = time()
+    while not queue.empty:
+        node = queue.get()
+        if debug > 0:
+            print(
+                "queue len:",
+                queue.len,
+                "   visited len",
+                len(visited),
+                "get node priority: {:3.2f}, numberOfStrands: {}".format(
+                    node.priority, node.knot.numberOfStrands
+                ),
+            )
+            print("Mov: ", node.mov)
+
+        if not visited.add(node.knot.representationForHash):
+            if debug > 0:
+                print("Esta en visited")
+            continue
+        if node.knot == knot2:
+            return True, node.mov
+        i = 0
+        if times > 0:
+            totalTime = 0.0
+        for successor in node.successors(maxStrands):
+            if (time() - startTime) > timeLimit:
+                return False, []
+            i += 1
+            if times > 0:
+                start = time()
+            if successor.knot.representationForHash in visited:
+                if debug > 1:
+                    print(i, "ya esta en visited")
+                if times > 1:
+                    print("Time check in visited", time() - start)
+                continue
+
+            if times > 1:
+                print("Time check1", time() - start)
+
+            # successor.difference = difference(successor.knot, knot2)
+            if times > 1:
+                print("Time check2", time() - start)
+            if debug > 1:
+                print("{}: {:3.2f}, mov: {}".format(i, successor.mov))
+            if successor.knot == knot2:
+                queue.put(successor)
+                return True, successor.mov
+            if times > 1:
+                print("Time check3", time() - start)
+            queue.put(successor)
+            if times > 0:
+                print("Time successor", time() - start)
+                totalTime += time() - start
+        if times > 0:
+            print("Time expandNode ", totalTime)
