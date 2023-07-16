@@ -400,6 +400,15 @@ class CustomKnot:
         self._image = image
         return self.image()
 
+    def simplePlanarDiagram(self: CustomKnot):
+        matrix = self.planarDiagrams()
+        matrix = borderByZeros(matrix)
+        matrix = createGaps(matrix)
+        matrix = removeBorderOfZeros(matrix)
+        for i in range(1, self.numberOfStrands + 1):
+            matrix = replace(matrix, i, 1)
+        return matrix
+
     def createALoop(self, l, typ, recalculatePd=False):
         """Create a loop of Reidemeister's first move."""
         if len(self.crosses) == 0:
